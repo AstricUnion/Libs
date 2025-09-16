@@ -1,8 +1,8 @@
 --@name Projectiles, damage and ETC
 --@author AstricUnion
 --@server
---@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/ftimers.lua as ftimers
---@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/holos.lua as holos
+--@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ftimers.lua as ftimers
+--@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/holos.lua as holos
 
 require("ftimers")
 require("holos")
