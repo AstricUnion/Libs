@@ -18,9 +18,9 @@ Movement.__index = Movement
 ---Movement object. Implementing movement behaviour for bot.
 ---@param seat Entity Seat to use with bot, will be parented to hitbox
 ---@param hitbox Entity Hitbox to use with bot (collision model)
----@param speed number Bot maximum speed. Default 400
----@param sprint number Bot sprint maximum speed. Default 800
----@param duration number Bot stop speed. Default 0.1
+---@param speed number Bot maximum speed. Default 600
+---@param sprint number Bot sprint maximum speed. Default 200
+---@param duration number Bot stop speed. Default 0.05
 ---@return Movement object
 function Movement:new(seat, hitbox, speed, sprint, duration)
     local physobj = hitbox:getPhysicsObject()
@@ -29,10 +29,10 @@ function Movement:new(seat, hitbox, speed, sprint, duration)
     seat:setColor(Color(0, 0, 0, 0))
     local self = setmetatable(
         {
-            speed = speed or 400,
-            sprint = sprint or 800,
+            speed = speed or 200,
+            sprint = sprint or 600,
             velocity = Vector(),
-            duration = duration or 0.1,
+            duration = duration or 0.05,
             hitbox = hitbox,
             physobj = physobj,
             seat = seat
