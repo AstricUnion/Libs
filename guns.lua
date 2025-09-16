@@ -1,10 +1,10 @@
 --@name Projectiles, damage and ETC
 --@author AstricUnion
 --@server
---@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/fractional_timers.lua as fractional_timers
+--@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/ftimers.lua as ftimers
 --@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/holos.lua as holos
 
-require("fractional_timers")
+require("ftimers")
 require("holos")
 
 local projectiles = {}
