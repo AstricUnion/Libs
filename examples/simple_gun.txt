@@ -1,0 +1,33 @@
+--@name Simple gun
+--@author AstricUnion
+--@server
+--@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/holos.txt as holos.txt
+
+require("holos.txt")
+
+local parts = {
+    hand = {
+        hologram.createPart(
+            Holo(SubHolo()),
+            Holo(SubHolo(Vector(0, 0, 5), Angle(), "models/props_c17/oildrum001_explosive.mdl"))
+        ),
+        hologram.createPart(
+            Holo(SubHolo(Vector(0, 0, 45))),
+            Holo(
+                SubHolo(Vector(0, 0, 50), Angle(), "models/props_c17/oildrum001_explosive.mdl")
+            ),
+            Holo(
+                SubHolo(Vector(0, 0, 90), Angle(), nil, nil, true, Color(0, 0, 0, 0)),
+                Trail(10, 50, 50, "trails/physbeam", Color(255, 255, 255))
+            )
+        ),
+    }
+}
+parts.hand[1]:setParent(chip())
+parts.hand[2]:setParent(parts.hand[1])
+
+hook.add("tick", "", function()
+    local res = owner():getEyeTrace()
+    local angles = (parts.hand[2]:getPos() - res.HitPos):getAngle()
+    parts.hand[2]:setAngles(math.lerpAngle(0.3, parts.hand[2]:getAngles(), angles + Angle(-90, 0, 0)))
+end)

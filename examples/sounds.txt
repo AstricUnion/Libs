@@ -1,0 +1,16 @@
+--@name Sounds from sentry
+--@author AstricUnion
+--@shared
+--@include astricunion/libs/sounds.txt
+require("astricunion/libs/sounds.txt")
+
+if SERVER then
+    preloadSounds(
+        Sound("scan", 30, true, "https://www.dl.dropboxusercontent.com/scl/fi/cd99n62t66324nb82rogl/sentry-scanning.mp3?rlkey=55wn0lyuy6znyxu0ajiyfspfq&st=1dy0ilxu&dl=1"),
+        Sound("spotted", 30, false, "https://www.dl.dropboxusercontent.com/scl/fi/441wna5k93x7se9ga8qao/sentry-spotted.mp3?rlkey=hg2af7b3jtgfh55rwozusupno&st=5yfzzmd3&dl=1"),
+        Sound("shot", 30, false, "https://www.dl.dropboxusercontent.com/scl/fi/yizc9yefv9jcgenj2us8i/sentry-shooting.mp3?rlkey=0o4lp0oz47333qr9d7k8n5bzv&st=uu5pq3xd&dl=1")
+    )
+    timer.simple(10, function()
+        playSound("spotted")
+    end)
+end

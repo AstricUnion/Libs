@@ -1,0 +1,27 @@
+--@name Fractional timer example
+--@author AstricUnion
+--@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/fractional_timers.txt as timers.txt
+--@server
+
+require("timers.txt")
+
+FTimer:new(10, 3, {
+    [0.0] = function()
+        print("started")
+    end,
+    [0.4] = function()
+        print("4 seconds")
+    end,
+    [0.5] = function()
+        print("5 seconds")
+    end,
+    [0.6] = function()
+        print("6 seconds")
+    end,
+    ['0.8-0.9'] = function(t, fraction, relative)
+        print("Fraction: ", fraction, ", relative: ", relative)
+    end,
+    [1.0] = function()
+        print("ended")
+    end 
+})

@@ -1,0 +1,26 @@
+--@name Basic movement example
+--@author AstricUnion
+--@server
+--@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/movement.txt as movement.txt
+
+require("movement.txt")
+
+local seat = prop.createSeat(chip():getPos() + Vector(0, 0, 30), Angle(), "models/nova/airboat_seat.mdl")
+local size = Vector(70, 70, 20)
+local hitbox = prop.createCustom(
+    chip():getPos() + Vector(-size.x/2, -size.y/2, 0),
+    Angle(), 
+    {
+        {
+            Vector(0, 0, 0), Vector(size.x, 0, 0), Vector(size.x, size.y, 0), Vector(0, size.y, 0),
+            Vector(0, 0, size.z), Vector(size.x, 0, size.z), Vector(size.x, size.y, size.z), Vector(0, size.y, size.z),
+        },
+    }
+)
+
+local movement = Movement:new(seat, hitbox, 300)
+
+
+hook.add("Think", "Movement", function()
+    movement:think()
+end)
