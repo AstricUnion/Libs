@@ -1,11 +1,11 @@
 --@name Projectiles, damage and ETC
 --@author AstricUnion
 --@server
---@include astricunion/libs/fractional_timers.txt
---@include astricunion/libs/holos.txt
+--@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/fractional_timers.lua as fractional_timers
+--@include https://raw.githubusercontent.com/AstricUnion/AstroBots/refs/heads/main/libs/holos.lua as holos
 
-require("astricunion/libs/fractional_timers.txt")
-require("astricunion/libs/holos.txt")
+require("fractional_timers")
+require("holos")
 
 local projectiles = {}
 
