@@ -138,7 +138,7 @@ if SERVER then
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
             net.start("OnEnter")
-            net.writeEntity(body.head)
+            net.writeEntity(self.head)
             net.send(ply)
         end
     end
