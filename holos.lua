@@ -14,7 +14,7 @@ SubHolo.__index = SubHolo
 ---@param color Color of holo, default full white
 ---@param mat Material of holo, default uses model material
 function SubHolo:new(pos, ang, model, scale, suppress_light, color, mat)
-    local self = setmetatable(
+    return setmetatable(
         {
             pos = pos or Vector(),
             ang = ang or Angle(),
@@ -26,7 +26,6 @@ function SubHolo:new(pos, ang, model, scale, suppress_light, color, mat)
         },
         SubHolo
     )
-    return self
 end
 setmetatable(SubHolo, {__call = SubHolo.new})
 
@@ -45,7 +44,7 @@ Trail.__index = Trail
 ---@param additive If the trail's rendering is additive
 ---@return Trail object
 function Trail:new(startSize, endSize, length, mat, color, attachmentID, additive)
-    local self = setmetatable(
+    return setmetatable(
         {
             startSize = startSize,
             endSize = endSize,
@@ -57,7 +56,6 @@ function Trail:new(startSize, endSize, length, mat, color, attachmentID, additiv
         },
         Trail
     )
-    return self
 end
 setmetatable(Trail, {__call = Trail.new})
 
@@ -69,14 +67,13 @@ Holo.__index = Holo
 ---@param subholo SubHolo structure
 ---@param trail Trail structure
 function Holo:new(subholo, trail)
-    local self = setmetatable(
+    return setmetatable(
         {
             subholo = subholo,
             trail = trail
         },
         Holo
     )
-    return self
 end
 setmetatable(Holo, {__call = Holo.new})
 

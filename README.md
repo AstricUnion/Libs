@@ -37,7 +37,7 @@ require("ui")
 ```
 
 # TODO
-- [ ] Merge movement and astrobase in one lib
+- [x] Merge movement and astrobase in one lib
 - [ ] Make guns Blaster and BlasterProjectile a inheritance class
 - [ ] Make more UI elements
 - [ ] Make 3D UI

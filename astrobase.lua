@@ -2,8 +2,17 @@
 --@author AstricUnion
 --@shared
 
-if SERVER then
+---Gets key direction of player.
+---@param ply Player
+---@param negative_key number See IN_KEY enum
+---@param positive_key number See IN_KEY enum
+---@return number from -1 to 1
+local function getKeyDirection(ply, negative_key, positive_key)
+    return (ply:keyDown(positive_key) and 1 or 0) - (ply:keyDown(negative_key) and 1 or 0)
+end
 
+
+if SERVER then
     --Hitbox class
     hitbox = {}
 
@@ -35,6 +44,7 @@ if SERVER then
 
 
     ---Base class for Astro
+    ---@class AstroBase
     AstroBase = {}
     AstroBase.__index = AstroBase
 
@@ -44,42 +54,85 @@ if SERVER then
     ---@param head Entity Head hitbox
     ---@param seat Entity Bot seat
     ---@param health number Health of bot
-    ---@param on_enter function Callback on entering
-    ---@param on_leave function Callback on leaving
     ---@return AstroBase astro Astro object
-    function AstroBase:new(states, body, head, seat, health)
+    function AstroBase:new(states, body, head, seat, health, speed, sprint, ratio)
         if !(states.NotInUse and states.Idle) then
             throw("States require a NotInUse and Idle")
         end
-        local movement = Movement:new(seat, body)
+        local physobj = body:getPhysicsObject()
+        physobj:setMass(1000)
+        seat:setParent(body)
+        seat:setColor(Color(0, 0, 0, 0))
         head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
         head:setMass(100)
-        local self = setmetatable(
+        head:setParent(body)
+        return setmetatable(
             {
                 states = states,
                 state = states.NotInUse,
                 health = health,
                 maxhealth = health,
-                movement = movement,
+                speed = speed or 200,
+                sprint = sprint or 600,
+                velocity = Vector(),
+                ratio = ratio or 0.05,
                 body = body,
-                head = head
+                physobj = physobj,
+                head = head,
+                seat = seat
             },
             AstroBase
         )
-        return self
     end
 
+    function AstroBase:getDirection(driver)
+        local eyeangles = driver:getEyeAngles():setR(0)
+        local dir = Vector(
+            getKeyDirection(driver, IN_KEY.BACK, IN_KEY.FORWARD),
+            getKeyDirection(driver, IN_KEY.MOVERIGHT, IN_KEY.MOVELEFT),
+            0
+        ):getRotated(eyeangles)
+        dir.z = math.clamp(
+            dir.z + getKeyDirection(driver, IN_KEY.SPEED, IN_KEY.JUMP),
+            -1,
+            1
+        )
+        return dir
+    end
 
     function AstroBase:think(active_callback)
-        self.movement:think(function(dr)
-            self.head:setAngles(dr:getEyeAngles())
-            if active_callback then active_callback(dr) end
-        end)
+        local frametime = game.getTickInterval()
+        local driver = self.seat:getDriver()
+        if isValid(driver) then
+            if self.physobj:isGravityEnabled() then
+                self.physobj:enableGravity(false)
+            end
+            local dir = self:getDirection(driver)
+            if not driver:keyDown(IN_KEY.DUCK) then
+                self.velocity = math.lerpVector(self.ratio, self.velocity, dir * self.speed * 100 * frametime)
+            else
+                self.velocity = math.lerpVector(self.ratio, self.velocity, dir * self.sprint * 100 * frametime)
+            end
+            self.physobj:setVelocity(self.velocity)
+            -- Code from Astro Striker by [Squidward Gaming] --
+            local eyeangles = driver:getEyeAngles():setR(0)
+            local ang = self.seat:worldToLocalAngles(eyeangles - self.body:getAngles())
+            ang = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
+            self.physobj:addAngleVelocity(ang)
+            --------------------------------------------------- Thanks! :3
+            self.head:setAngles(driver:getEyeAngles())
+            if active_callback then active_callback(driver) end
+        else
+            if not self.physobj:isGravityEnabled() then
+                self.physobj:enableGravity(true)
+            end
+        end
+        self.seat:setAngles(Angle())
     end
 
 
     function AstroBase:enter(ply, seat)
-        if self.movement.seat == seat then
+        if self.seat == seat then
             self.state = self.states.Idle
             seat:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
@@ -92,7 +145,7 @@ if SERVER then
 
 
     function AstroBase:leave(ply, seat)
-        if self.movement.seat == seat then
+        if self.seat == seat then
             self.state = self.states.NotInUse
             seat:setCollisionGroup(COLLISION_GROUP.VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
@@ -112,8 +165,8 @@ if SERVER then
         self.health = self.health - amount
         if not self:isAlive() then
             if callback then callback() end
-            self.movement.seat:ejectDriver()
-            self.movement.physobj:enableGravity(true)
+            self.seat:ejectDriver()
+            self.physobj:enableGravity(true)
             self.head:setParent(nil)
             self.head:setFrozen(false)
             self.head:setPos(self.head:getPos())
@@ -131,7 +184,7 @@ if SERVER then
                 eff:play("explosion")
                 self.body:emitSound("weapons/underwater_explode3.wav")
             end)
-            self.movement.seat:remove()
+            self.seat:remove()
         end
     end
 else
