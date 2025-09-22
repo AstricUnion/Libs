@@ -5,7 +5,6 @@ There is some libs:
 * guns.lua - guns, projectiles for bots
 * holos.lua - very easy hologram creator
 * light.lua - Server-side light.create
-* movement.lua - Astro movement base
 * sounds.lua - Server-side preload and play sounds within bass.loadUrl (REQUIRES NOBLOCK SOUNDS)
 * ui.lua - UI library for Astro HUD, but you may find something interesting in it
 
@@ -25,9 +24,6 @@ require("holos")
 
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/light.lua as light
 require("light")
-
---@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/movement.lua as movement
-require("movement")
 
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/sounds.lua as sounds
 require("sounds")
