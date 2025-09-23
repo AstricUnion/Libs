@@ -2,32 +2,42 @@
 --@author AstricUnion
 --@server
 
-SubHolo = {}
-SubHolo.__index = SubHolo
+local CHIPPOS = chip():getPos()
 
 ---SubHolo structure, stores subhologram data
----@param pos Position of holo, default Vector()
----@param ang Angle of holo, default Angle()
----@param model Model of holo, default "models/hunter/blocks/cube025x025x025.mdl"
----@param scale Scale of holo, default Vector(1, 1, 1)
----@param suppress_light Suppress light of the holo, default false
----@param color Color of holo, default full white
----@param mat Material of holo, default uses model material
-function SubHolo:new(pos, ang, model, scale, suppress_light, color, mat)
-    return setmetatable(
-        {
-            pos = pos or Vector(),
-            ang = ang or Angle(),
-            model = model or "models/hunter/blocks/cube025x025x025.mdl",
-            scale = scale or Vector(1, 1, 1),
-            suppress_light = suppress_light or false,
-            color = color or Color(255, 255, 255, 0),
-            mat = mat or nil
-        },
-        SubHolo
+---@param pos? Vector Position, default Vector()
+---@param ang? Angle Angle, default Angle()
+---@param model? string Model of holo, default "models/hunter/blocks/cube025x025x025.mdl"
+---@param scale? Vector of holo, default Vector(1, 1, 1)
+---@param suppress_light? boolean Suppress light of the holo, default false
+---@param color? Color of holo, default full white
+---@param mat? string of holo, default uses model material
+---@return Hologram?
+function SubHolo(pos, ang, model, scale, suppress_light, color, mat)
+    local holo = {
+        pos = pos or Vector(),
+        ang = ang or Angle(),
+        model = model or "models/hunter/blocks/cube025x025x025.mdl",
+        scale = scale or Vector(1, 1, 1),
+        suppress_light = suppress_light or false,
+        color = color or Color(255, 255, 255, 0),
+        mat = mat or nil
+    }
+    local holo_obj = hologram.create(
+        CHIPPOS + holo.pos,
+        holo.ang,
+        holo.model,
+        holo.scale
     )
+    if not holo_obj then
+        throw("Can't create hologram with model " .. holo.model)
+        return
+    end
+    holo_obj:suppressEngineLighting(holo.suppress_light)
+    holo_obj:setColor(holo.color)
+    if holo.mat then holo_obj:setMaterial(holo.mat) end
+    return holo_obj
 end
-setmetatable(SubHolo, {__call = SubHolo.new})
 
 
 
@@ -64,7 +74,7 @@ Holo = {}
 Holo.__index = Holo
 
 ---Holo structure, stores hologram data
----@param subholo SubHolo structure
+---@param subholo Hologram Hologram to spawn
 ---@param trail Trail structure
 function Holo:new(subholo, trail)
     return setmetatable(
@@ -83,16 +93,8 @@ setmetatable(Holo, {__call = Holo.new})
 function hologram.createPart(...)
     local main_holo
     for i, holo in ipairs({...}) do
-        local holo_obj = hologram.create(
-            holo.subholo.pos,
-            holo.subholo.ang,
-            holo.subholo.model,
-            holo.subholo.scale
-        )
-        holo_obj:suppressEngineLighting(holo.subholo.suppress_light)
-        holo_obj:setColor(holo.subholo.color)
         if holo.trail then
-            holo_obj:setTrails(
+            holo.subholo:setTrails(
                 holo.trail.startSize,
                 holo.trail.endSize,
                 holo.trail.length,
@@ -102,13 +104,11 @@ function hologram.createPart(...)
                 holo.trail.additive
             )
         end
-        if holo.subholo.mat then holo_obj:setMaterial(holo.subholo.mat) end
-        holo_obj:setPos(chip():getPos() + holo_obj:getPos())
         if i == 1 then
-            main_holo = holo_obj
+            main_holo = holo.subholo
             continue
         end
-        holo_obj:setParent(main_holo)
+        holo.subholo:setParent(main_holo)
     end
     return main_holo
 end
