@@ -61,6 +61,7 @@ function Rig(pos, ang, visible)
         throw("Can't create hologram with model " .. holo.model)
         return
     end
+    holo_obj:suppressEngineLighting(true)
     holo_obj:setColor(holo.color)
     return holo_obj
 end
