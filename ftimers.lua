@@ -4,13 +4,8 @@
 
 instances = {}
 
-FTimer =  {
-    loops = nil,
-    duration = nil,
-    paused = nil,
-    fractions = nil,
-    update_func = nil
-}
+---@class FTimer
+FTimer =  {}
 FTimer.__index = FTimer
 
 ---Fractional timer object.
@@ -107,7 +102,6 @@ hook.add("Think", "fractionalTimers", function()
                 ftimer:remove()
                 continue
             end
-            
             coroutine.resume(ftimer.update_func, ftimer)
         end
     end

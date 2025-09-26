@@ -4,7 +4,7 @@
 
 local CHIPPOS = chip():getPos()
 
----SubHolo structure, stores subhologram data
+---Function to create SubHolo
 ---@param pos? Vector Position, default Vector()
 ---@param ang? Angle Angle, default Angle()
 ---@param model? string Model of holo, default "models/hunter/blocks/cube025x025x025.mdl"
@@ -20,7 +20,7 @@ function SubHolo(pos, ang, model, scale, suppress_light, color, mat)
         model = model or "models/hunter/blocks/cube025x025x025.mdl",
         scale = scale or Vector(1, 1, 1),
         suppress_light = suppress_light or false,
-        color = color or Color(255, 255, 255, 0),
+        color = color or Color(255, 255, 255),
         mat = mat or nil
     }
     local holo_obj = hologram.create(
@@ -36,6 +36,32 @@ function SubHolo(pos, ang, model, scale, suppress_light, color, mat)
     holo_obj:suppressEngineLighting(holo.suppress_light)
     holo_obj:setColor(holo.color)
     if holo.mat then holo_obj:setMaterial(holo.mat) end
+    return holo_obj
+end
+
+
+---Function Rig, to create rig holograms
+---@param pos? Vector Position, default Vector()
+---@param ang? Angle Angle, default Angle()
+---@param visible? boolean Turn on visibility (for designing)
+---@return Hologram?
+function Rig(pos, ang, visible)
+    local holo = {
+        pos = pos or Vector(),
+        ang = ang or Angle(),
+        model = "models/hunter/blocks/cube025x025x025.mdl",
+        color = Color(255, 255, 255, visible and 255 or 0),
+    }
+    local holo_obj = hologram.create(
+        CHIPPOS + holo.pos,
+        holo.ang,
+        holo.model
+    )
+    if not holo_obj then
+        throw("Can't create hologram with model " .. holo.model)
+        return
+    end
+    holo_obj:setColor(holo.color)
     return holo_obj
 end
 
