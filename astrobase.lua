@@ -45,14 +45,39 @@ if SERVER then
 
     ---Base class for Astro
     ---@class AstroBase
-    AstroBase = {}
+    AstroBase = {
+        ---@type table
+        states = nil,
+        ---@type number
+        state = nil,
+        ---@type number
+        health = nil,
+        ---@type number
+        maxhealth = nil,
+        ---@type number
+        speed = nil,
+        ---@type number
+        sprint = nil,
+        ---@type Vector
+        velocity = nil,
+        ---@type number
+        ratio = nil,
+        ---@type Entity
+        body = nil,
+        ---@type PhysObj
+        physobj = nil,
+        ---@type Entity
+        head = nil,
+        ---@type Vehicle
+        seat = nil
+    }
     AstroBase.__index = AstroBase
 
     ---AstroBase constructor
     ---@param states table States of Astro (REQUIRE STATE Idle AND NotInUse)
     ---@param body Entity Body hitbox
     ---@param head Entity Head hitbox
-    ---@param seat Entity Bot seat
+    ---@param seat Vehicle Bot seat
     ---@param health number Health of bot
     ---@return AstroBase astro Astro object
     function AstroBase:new(states, body, head, seat, health, speed, sprint, ratio)
@@ -117,8 +142,8 @@ if SERVER then
             -- Code from Astro Striker by [Squidward Gaming] --
             local eyeangles = driver:getEyeAngles():setR(0)
             local ang = self.seat:worldToLocalAngles(eyeangles - self.body:getAngles())
-            ang = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
-            self.physobj:addAngleVelocity(ang)
+            local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
+            self.physobj:addAngleVelocity(angvel)
             --------------------------------------------------- Thanks! :3
             self.head:setAngles(driver:getEyeAngles())
             if active_callback then active_callback(driver) end
@@ -128,6 +153,19 @@ if SERVER then
             end
         end
         self.seat:setAngles(Angle())
+    end
+
+    ---Eye trace for Astro
+    ---@param filter? table | Entity Filter to trace (hitbox, seat and head are always there)
+    ---@return table? TraceResult Result of the trace
+    function AstroBase:eyeTrace(filter)
+        local driver = self.seat:getDriver()
+        if !isValid(driver) then return end
+        local pos = driver:getEyePos()
+        local ang = driver:getEyeAngles()
+        filter = filter or {}
+        table.add(filter, {self.body, self.head, self.seat})
+        return trace.line(pos, pos + ang:getForward() * 16384, filter)
     end
 
 

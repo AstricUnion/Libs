@@ -303,7 +303,7 @@ else
         local pos = self.parent:getPos()
         local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
         local tick = game.getTickCount()
-        if tick % 3 == 0 and trace.canCreateDecal() then
+        if tick % 5 == 0 and trace.canCreateDecal() then
             trace.decal("Dark", res.HitPos, res.HitPos + res.Normal)
         end
         self.holo3:setPos(res.HitPos)
@@ -317,6 +317,7 @@ else
 
     --- Remove laser
     function LaserModel:remove()
+        if !(isValid(self.holo) and isValid(self.holo2) and isValid(self.holo3)) then return end
         self.holo:remove()
         self.holo2:remove()
         self.holo3:remove()
