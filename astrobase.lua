@@ -156,6 +156,14 @@ if SERVER then
     end
 
 
+    function AstroBase:setState(state)
+        self.state = state
+    end
+
+    function AstroBase:getState()
+        return self.state
+    end
+
     function AstroBase:isAlive()
         return self.health > 0
     end
