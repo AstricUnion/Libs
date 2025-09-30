@@ -223,14 +223,11 @@ if SERVER then
         ---@type Entity
         parent = nil,
 
-        ---@type Hologram
-        holo = nil,
-
-        ---@type Hologram
-        holo2 = nil,
-
         ---@type number
         diameter = nil,
+
+        ---@type number
+        charge = nil
     }
     Laser.__index = Laser
 
@@ -243,7 +240,8 @@ if SERVER then
         return setmetatable(
             {
                 parent = parent,
-                diameter = (radius or 10) * 2
+                diameter = (radius or 10) * 2,
+                charge = 1
             },
             Laser
         )
@@ -260,6 +258,21 @@ if SERVER then
         local pos = self.parent:getPos()
         local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
         game.blastDamage(res.HitPos, self.diameter + 20, 5)
+    end
+
+    function Laser:increaseCharge(value)
+        self.charge = math.clamp(self.charge + value, 0, 1)
+    end
+
+    function Laser:decreaseCharge(value, ended_callback)
+        self.charge = math.clamp(self.charge - value, 0, 1)
+        if self.charge == 0 and ended_callback then
+            ended_callback()
+        end
+    end
+
+    function Laser:getCharge()
+        return self.charge
     end
 
     ---Stop shoot with laser

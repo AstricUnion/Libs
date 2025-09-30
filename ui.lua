@@ -16,7 +16,7 @@ fontMontserrat50 = render.createFont(
 )
 
 
-
+---@class Bar
 Bar = {}
 Bar.__index = Bar
 
