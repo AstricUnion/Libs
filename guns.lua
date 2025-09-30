@@ -235,13 +235,17 @@ if SERVER then
     ---Creates laser object
     ---@param parent Entity Object to parent
     ---@param radius number? Radius of the laser, default 10
+    ---@param damage number? Damage of the laser, default 5
+    ---@param damage_radius number? Damage radius of the laser, default 7.5
     ---@return Laser?
-    function Laser:new(parent, radius)
+    function Laser:new(parent, radius, damage, damage_radius)
         return setmetatable(
             {
                 parent = parent,
                 diameter = (radius or 10) * 2,
-                charge = 1
+                charge = 1,
+                damage = damage or 5,
+                damage_diameter = (damage_radius or 7.5) * 2
             },
             Laser
         )
@@ -257,7 +261,7 @@ if SERVER then
     function Laser:think()
         local pos = self.parent:getPos()
         local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
-        game.blastDamage(res.HitPos, self.diameter + 20, 5)
+        game.blastDamage(res.HitPos, self.diameter + self.damage_diameter, self.damage)
     end
 
     function Laser:increaseCharge(value)
@@ -269,6 +273,14 @@ if SERVER then
         if self.charge == 0 and ended_callback then
             ended_callback()
         end
+    end
+
+    function Laser:setDamage(damage)
+        self.damage = damage
+    end
+
+    function Laser:setDamageRadius(radius)
+        self.damage_diameter = radius * 2
     end
 
     function Laser:getCharge()
@@ -292,20 +304,23 @@ else
         ---@type Entity
         parent = nil,
         ---@type number
-        diameter = nil
+        diameter = nil,
+        ---@type number
+        damage_diameter = nil
     }
     LaserModel.__index = LaserModel
 
     local models = {}
 
-    function LaserModel:new(holo, holo2, holo3, parent, diameter)
+    function LaserModel:new(holo, holo2, holo3, parent, diameter, damage_diameter)
         return setmetatable(
             {
                 holo = holo,
                 holo2 = holo2,
                 holo3 = holo3,
                 parent = parent,
-                diameter = diameter
+                diameter = diameter,
+                damage_diameter = damage_diameter
             },
             LaserModel
         )
@@ -321,7 +336,7 @@ else
         end
         self.holo3:setPos(res.HitPos)
         local size = ((game.getTickCount() % 2 * -3) + self.diameter)
-        self.holo3:setSize(Vector(size + 15))
+        self.holo3:setSize(Vector(size + self.damage_diameter))
         local dist = pos:getDistance(res.HitPos)
         self.holo:setPos(pos + (res.Normal * (dist / 2)))
         self.holo:setSize(Vector(size - 5, size - 5, dist))
@@ -378,13 +393,13 @@ else
 
         holo3:suppressEngineLighting(true)
         holo3:setMaterial("debug/debugwhite")
-        holo3:setSize(Vector(tab.diameter + 15, tab.diameter + 15, tab.diameter + 15))
+        holo3:setSize(Vector(tab.diameter + tab.damage_diameter))
 
         holo2:suppressEngineLighting(true)
         holo2:setMaterial("debug/debugwhite")
         holo2:setColor(Color(255, 0, 0))
         holo2:setCullMode(1)
-        local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0)
+        local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0, tab.damage_diameter)
         models[tab.parent:entIndex()] = model
         FTimer:new(0.25, 1, {
             ["0-1"] = function(_, _, fraction)

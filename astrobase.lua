@@ -21,8 +21,8 @@ if SERVER then
     ---@param pos Vector Position of hitbox
     ---@param angle Angle Angle of hitbox
     ---@param size Vector Size of hitbox
-    ---@param freeze boolean Make hitbox freezed, default false
-    ---@param visible boolean Make hitbox visible, default false
+    ---@param freeze boolean? Make hitbox freezed, default false
+    ---@param visible boolean? Make hitbox visible, default false
     ---@return Entity hitbox Hitbox entity
     function hitbox.cube(pos, angle, size, freeze, visible)
         local hitbox = prop.createCustom(
