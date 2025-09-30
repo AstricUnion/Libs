@@ -69,7 +69,9 @@ if SERVER then
         ---@type Entity
         head = nil,
         ---@type Vehicle
-        seat = nil
+        seat = nil,
+        ---@type Player
+        driver = nil
     }
     AstroBase.__index = AstroBase
 
@@ -79,6 +81,9 @@ if SERVER then
     ---@param head Entity Head hitbox
     ---@param seat Vehicle Bot seat
     ---@param health number Health of bot
+    ---@param speed? number Speed of bot, default 200
+    ---@param sprint? number Sprint speed of bot, default 600
+    ---@param ratio? number Velocity linear interpolation ratio of bot, default 0.05
     ---@return AstroBase astro Astro object
     function AstroBase:new(states, body, head, seat, health, speed, sprint, ratio)
         if !(states.NotInUse and states.Idle) then
@@ -91,7 +96,7 @@ if SERVER then
         head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
         head:setMass(100)
         head:setParent(body)
-        return setmetatable(
+        local astro = setmetatable(
             {
                 states = states,
                 state = states.NotInUse,
@@ -104,21 +109,45 @@ if SERVER then
                 body = body,
                 physobj = physobj,
                 head = head,
-                seat = seat
+                seat = seat,
+                driver = nil
             },
             AstroBase
         )
+
+        local id = body:entIndex()
+        -- Driver defense, because driver can be killed (ONLY ADMIN)
+        hook.add("EntityTakeDamage", "AstroDriverDefense" .. id, function(target)
+            return target == astro.driver
+        end)
+        -- Driver enters
+        hook.add("PlayerEnteredVehicle", "AstroEntered" .. id, function(ply, vehicle)
+            astro:enter(ply, vehicle)
+        end)
+        -- Driver left
+        hook.add("PlayerLeaveVehicle", "AstroLeft" .. id, function(ply, vehicle)
+            astro:leave(ply, vehicle)
+        end)
+        -- On chip remove
+        hook.add("Removed", "AstroRemoved" .. id, function()
+            if astro.driver then astro.driver:setColor(Color(255, 255, 255, 255)) end
+        end)
+        return astro
     end
 
-    function AstroBase:getDirection(driver)
-        local eyeangles = driver:getEyeAngles():setR(0)
+
+    ---Gets direction of the driver
+    ---@return Vector? direction Returns direction Astro moving in
+    function AstroBase:getDirection()
+        if !self.driver then return end
+        local eyeangles = self.driver:getEyeAngles():setR(0)
         local dir = Vector(
-            getKeyDirection(driver, IN_KEY.BACK, IN_KEY.FORWARD),
-            getKeyDirection(driver, IN_KEY.MOVERIGHT, IN_KEY.MOVELEFT),
+            getKeyDirection(self.driver, IN_KEY.BACK, IN_KEY.FORWARD),
+            getKeyDirection(self.driver, IN_KEY.MOVERIGHT, IN_KEY.MOVELEFT),
             0
         ):getRotated(eyeangles)
         dir.z = math.clamp(
-            dir.z + getKeyDirection(driver, IN_KEY.SPEED, IN_KEY.JUMP),
+            dir.z + getKeyDirection(self.driver, IN_KEY.SPEED, IN_KEY.JUMP),
             -1,
             1
         )
@@ -128,16 +157,13 @@ if SERVER then
     function AstroBase:think(active_callback)
         local frametime = game.getTickInterval()
         local driver = self.seat:getDriver()
+        local gravity = self.physobj:isGravityEnabled()
         if isValid(driver) then
-            if self.physobj:isGravityEnabled() then
-                self.physobj:enableGravity(false)
-            end
-            local dir = self:getDirection(driver)
-            if not driver:keyDown(IN_KEY.DUCK) then
-                self.velocity = math.lerpVector(self.ratio, self.velocity, dir * self.speed * 100 * frametime)
-            else
-                self.velocity = math.lerpVector(self.ratio, self.velocity, dir * self.sprint * 100 * frametime)
-            end
+            self.driver = driver
+            if gravity then self.physobj:enableGravity(false) end
+            local dir = self:getDirection()
+            local speed = driver:keyDown(IN_KEY.DUCK) and self.sprint or self.speed
+            self.velocity = math.lerpVector(self.ratio, self.velocity, dir * speed * 100 * frametime)
             self.physobj:setVelocity(self.velocity)
             -- Code from Astro Striker by [Squidward Gaming] --
             local eyeangles = driver:getEyeAngles():setR(0)
@@ -145,12 +171,11 @@ if SERVER then
             local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
             self.physobj:addAngleVelocity(angvel)
             --------------------------------------------------- Thanks! :3
-            self.head:setAngles(driver:getEyeAngles())
+            self.head:setAngles(eyeangles)
             if active_callback then active_callback(driver) end
         else
-            if not self.physobj:isGravityEnabled() then
-                self.physobj:enableGravity(true)
-            end
+            self.driver = nil
+            if !gravity then self.physobj:enableGravity(true) end
         end
         self.seat:setAngles(Angle())
     end
@@ -159,10 +184,9 @@ if SERVER then
     ---@param filter? table | Entity Filter to trace (hitbox, seat and head are always there)
     ---@return table? TraceResult Result of the trace
     function AstroBase:eyeTrace(filter)
-        local driver = self.seat:getDriver()
-        if !isValid(driver) then return end
-        local pos = driver:getEyePos()
-        local ang = driver:getEyeAngles()
+        if !isValid(self.driver) then return end
+        local pos = self.driver:getEyePos()
+        local ang = self.driver:getEyeAngles()
         filter = filter or {}
         table.add(filter, {self.body, self.head, self.seat})
         return trace.line(pos, pos + ang:getForward() * 16384, filter)
