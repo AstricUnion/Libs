@@ -124,7 +124,7 @@ else
     hook.add("Think", "soundParent", function()
         for name, parent in pairs(PARENTS) do
             local snd = SOUNDS[name]
-            if snd then
+            if snd and isValid(parent) then
                 snd:setPos(parent:getPos())
             end
         end
