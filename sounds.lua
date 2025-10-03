@@ -3,6 +3,14 @@
 --@shared
 
 if SERVER then
+    -- Network strings --
+    -- preloadSound
+    -- preloaded
+    -- playSound
+    -- stopSound
+
+    local astrosounds = {}
+    setmetatable(astrosounds, {__index = astrosounds})
 
     ---Sound data
     ---@class Sound
@@ -30,7 +38,7 @@ if SERVER then
     ---Preload sounds for Astro. You should place it in ClientInitialize hook
     ---@param ply Player Player to send sounds
     ---@param ... Sound
-    function preloadSounds(ply, ...)
+    function astrosounds.preload(ply, ...)
         local sounds = {...}
         for _, snd in ipairs(sounds) do
             net.start("preloadSound")
@@ -43,11 +51,19 @@ if SERVER then
     end
 
 
+    ---SoundPreloaded hook
+    net.receive("preloaded", function(_, ply)
+        local name = net.readString()
+        hook.run("SoundPreloaded", name, ply)
+    end)
+
+
     ---Play preloaded sound
     ---@param name string
-    ---@param position Vector Position or parent of the sound
+    ---@param offset Vector Offset position or parent of the sound
     ---@param parent Entity | nil Parent of the sound
-    function playSound(name, offset, parent)
+    ---@param plys table | Player | nil Players to send the sound
+    function astrosounds.play(name, offset, parent, plys)
         net.start("playSound")
         net.writeString(name)
         net.writeVector(offset or Vector())
@@ -55,17 +71,19 @@ if SERVER then
         if parent then
             net.writeEntity(parent)
         end
-        net.send(find.allPlayers())
+        net.send(plys or find.allPlayers())
     end
 
 
     ---Stop preloaded sound
     ---@param name string
-    function stopSound(name)
+    function astrosounds.stop(name, plys)
         net.start("stopSound")
         net.writeString(name)
-        net.send(find.allPlayers())
+        net.send(plys or find.allPlayers())
     end
+
+    return astrosounds
 
 else
     local Error = {
@@ -79,7 +97,7 @@ else
         error = nil,
         ---@type number
         attempts = nil,
-        ---@type bool
+        ---@type boolean
         in_progress = nil
     }
 
@@ -120,6 +138,9 @@ else
             end
             SOUNDS[name] = snd
             message(" Sound \"" .. name .. "\" loaded!")
+            net.start("preloaded")
+            net.writeString(name)
+            net.send()
             snd:setVolume(volume)
             snd:setLooping(loop)
         end)
