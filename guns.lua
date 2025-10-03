@@ -258,9 +258,10 @@ if SERVER then
         net.send(find.allPlayers())
     end
 
-    function Laser:think()
+    function Laser:think(callback)
         local pos = self.parent:getPos()
         local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
+        if callback then callback(res) end
         game.blastDamage(res.HitPos, self.diameter + self.damage_diameter, self.damage)
     end
 
