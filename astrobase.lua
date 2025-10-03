@@ -70,6 +70,8 @@ if SERVER then
         head = nil,
         ---@type Vehicle
         seat = nil,
+        ---@type table
+        filter = nil,
         ---@type Player
         driver = nil
     }
@@ -110,6 +112,7 @@ if SERVER then
                 physobj = physobj,
                 head = head,
                 seat = seat,
+                filter = {body, head, seat},
                 driver = nil
             },
             AstroBase
@@ -180,16 +183,19 @@ if SERVER then
         self.seat:setAngles(Angle())
     end
 
+    ---Add ignore entity to Astro
+    ---@param ent any An entity to add to ignore
+    function AstroBase:addIgnore(ent)
+        table.insert(self.filter, ent)
+    end
+
     ---Eye trace for Astro
-    ---@param filter? table | Entity Filter to trace (hitbox, seat and head are always there)
     ---@return table? TraceResult Result of the trace
-    function AstroBase:eyeTrace(filter)
+    function AstroBase:eyeTrace()
         if !isValid(self.driver) then return end
         local pos = self.driver:getEyePos()
         local ang = self.driver:getEyeAngles()
-        filter = filter or {}
-        table.add(filter, {self.body, self.head, self.seat})
-        return trace.line(pos, pos + ang:getForward() * 16384, filter)
+        return trace.line(pos, pos + ang:getForward() * 16384, self.filter)
     end
 
 
