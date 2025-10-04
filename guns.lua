@@ -227,7 +227,16 @@ if SERVER then
         diameter = nil,
 
         ---@type number
-        charge = nil
+        charge = nil,
+
+        ---@type number
+        damage = nil,
+
+        ---@type number
+        damage_diameter = nil,
+
+        ---@type table
+        filter = nil
     }
     Laser.__index = Laser
 
@@ -245,10 +254,15 @@ if SERVER then
                 diameter = (radius or 10) * 2,
                 charge = 1,
                 damage = damage or 5,
-                damage_diameter = (damage_radius or 7.5) * 2
+                damage_diameter = (damage_radius or 7.5) * 2,
+                filter = {parent}
             },
             Laser
         )
+    end
+
+    function Laser:addIgnore(ent)
+        table.insert(self.filter, ent)
     end
 
     ---Shoot with laser
@@ -260,7 +274,7 @@ if SERVER then
 
     function Laser:think(callback)
         local pos = self.parent:getPos()
-        local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
+        local res = trace.line(pos, pos + self.parent:getForward() * 16384, self.filter)
         if callback then callback(res) end
         game.blastDamage(res.HitPos, self.diameter + self.damage_diameter, self.damage)
     end
@@ -307,13 +321,15 @@ else
         ---@type number
         diameter = nil,
         ---@type number
-        damage_diameter = nil
+        damage_diameter = nil,
+        ---@type table
+        filter = nil
     }
     LaserModel.__index = LaserModel
 
     local models = {}
 
-    function LaserModel:new(holo, holo2, holo3, parent, diameter, damage_diameter)
+    function LaserModel:new(holo, holo2, holo3, parent, diameter, damage_diameter, filter)
         return setmetatable(
             {
                 holo = holo,
@@ -321,7 +337,8 @@ else
                 holo3 = holo3,
                 parent = parent,
                 diameter = diameter,
-                damage_diameter = damage_diameter
+                damage_diameter = damage_diameter,
+                filter = filter
             },
             LaserModel
         )
@@ -330,7 +347,7 @@ else
     --- Think function. Place it in RenderOffscreen to better result
     function LaserModel:think()
         local pos = self.parent:getPos()
-        local res = trace.line(pos, pos + self.parent:getForward() * 16384, {self.parent})
+        local res = trace.line(pos, pos + self.parent:getForward() * 16384, self.filter)
         local tick = game.getTickCount()
         if tick % 5 == 0 and trace.canCreateDecal() then
             trace.decal("Dark", res.HitPos, res.HitPos + res.Normal)
@@ -400,7 +417,7 @@ else
         holo2:setMaterial("debug/debugwhite")
         holo2:setColor(Color(255, 0, 0))
         holo2:setCullMode(1)
-        local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0, tab.damage_diameter)
+        local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0, tab.damage_diameter, tab.filter)
         models[tab.parent:entIndex()] = model
         FTimer:new(0.25, 1, {
             ["0-1"] = function(_, _, fraction)
