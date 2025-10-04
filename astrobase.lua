@@ -95,9 +95,14 @@ if SERVER then
         physobj:setMass(1000)
         seat:setParent(body)
         seat:setColor(Color(0, 0, 0, 0))
+
         head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
         head:setMass(100)
         head:setParent(body)
+
+        body:setHealth(health)
+        body:setMaxHealth(health)
+
         local astro = setmetatable(
             {
                 states = states,
@@ -238,7 +243,8 @@ if SERVER then
 
     function AstroBase:damage(amount, callback)
         if not self:isAlive() then return end
-        self.health = self.health - amount
+        self.health = math.clamp(self.health - amount, 0, self.maxhealth)
+        self.body:setHealth(self.health)
         if not self:isAlive() then
             if callback then callback() end
             self.seat:ejectDriver()
@@ -252,7 +258,7 @@ if SERVER then
                 math.rand(-500, 500),
                 math.rand(-500, 500)
             ))
-            local id = body:entIndex()
+            local id = self.body:entIndex()
             hook.remove("EntityTakeDamage", "AstroDriverDefense" .. id)
             hook.remove("PlayerEnteredVehicle", "AstroEntered" .. id)
             hook.remove("PlayerLeaveVehicle", "AstroLeft" .. id)
