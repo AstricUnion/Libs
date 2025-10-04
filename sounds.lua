@@ -4,7 +4,7 @@
 
 if SERVER then
     -- Network strings --
-    -- preloadSound
+    -- preloadSounds
     -- preloaded
     -- playSound
     -- stopSound
@@ -40,14 +40,9 @@ if SERVER then
     ---@param ... Sound
     function astrosounds.preload(ply, ...)
         local sounds = {...}
-        for _, snd in ipairs(sounds) do
-            net.start("preloadSound")
-            net.writeString(snd.url)
-            net.writeString(snd.name)
-            net.writeBool(snd.looping)
-            net.writeInt(snd.volume, 32)
-            net.send(ply)
-        end
+        net.start("preloadSounds")
+        net.writeTable(sounds)
+        net.send(ply)
     end
 
 
@@ -146,12 +141,11 @@ else
         end)
     end
 
-    net.receive("preloadSound", function()
-        local url = net.readString()
-        local name = net.readString()
-        local loop = net.readBool()
-        local volume = net.readInt(32)
-        preload(url, name, loop, volume)
+    net.receive("preloadSounds", function()
+        local sounds = net.readTable()
+        for _, snd in ipairs(sounds) do
+            preload(snd.url, snd.name, snd.loop, snd.volume)
+        end
     end)
 
 
@@ -208,9 +202,6 @@ else
         local name = net.readString()
         local sound = SOUNDS[name]
         if sound then
-            if not sound:isLooping() then
-                return
-            end
             sound:pause()
             sound:setTime(0)
         end
