@@ -144,7 +144,7 @@ else
     net.receive("preloadSounds", function()
         local sounds = net.readTable()
         for _, snd in ipairs(sounds) do
-            preload(snd.url, snd.name, snd.loop, snd.volume)
+            preload(snd.url, snd.name, snd.looping, snd.volume)
         end
     end)
 
