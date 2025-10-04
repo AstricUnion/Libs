@@ -2,6 +2,11 @@
 --@author AstricUnion
 --@shared
 
+
+-- Hooks
+-- "AstroActivate(astro: AstroBase, ply: Player)"
+-- "AstroDeactivate(astro: AstroBase, ply: Player)"
+
 ---Gets key direction of player.
 ---@param ply Player
 ---@param negative_key number See IN_KEY enum
@@ -46,8 +51,6 @@ if SERVER then
     ---Base class for Astro
     ---@class AstroBase
     AstroBase = {
-        ---@type table
-        states = nil,
         ---@type number
         state = nil,
         ---@type number
@@ -78,7 +81,6 @@ if SERVER then
     AstroBase.__index = AstroBase
 
     ---AstroBase constructor
-    ---@param states table States of Astro (REQUIRE STATE Idle AND NotInUse)
     ---@param body Entity Body hitbox
     ---@param head Entity Head hitbox
     ---@param seat Vehicle Bot seat
@@ -87,10 +89,7 @@ if SERVER then
     ---@param sprint? number Sprint speed of bot, default 600
     ---@param ratio? number Velocity linear interpolation ratio of bot, default 0.05
     ---@return AstroBase astro Astro object
-    function AstroBase:new(states, body, head, seat, health, speed, sprint, ratio)
-        if !(states.NotInUse and states.Idle) then
-            throw("States require a NotInUse and Idle")
-        end
+    function AstroBase:new(body, head, seat, health, speed, sprint, ratio)
         local physobj = body:getPhysicsObject()
         physobj:setMass(1000)
         seat:setParent(body)
@@ -105,8 +104,7 @@ if SERVER then
 
         local astro = setmetatable(
             {
-                states = states,
-                state = states.NotInUse,
+                state = 0,
                 health = health,
                 maxhealth = health,
                 speed = speed or 200,
@@ -206,25 +204,25 @@ if SERVER then
 
     function AstroBase:enter(ply, seat)
         if self.seat == seat then
-            self.state = self.states.Idle
             seat:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
             net.start("OnEnter")
             net.writeEntity(self.head)
             net.send(ply)
+            hook.run("AstroActivate", self, ply)
         end
     end
 
 
     function AstroBase:leave(ply, seat)
         if self.seat == seat then
-            self.state = self.states.NotInUse
             seat:setCollisionGroup(COLLISION_GROUP.VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             ply:setColor(Color(255, 255, 255, 255))
             net.start("OnLeave")
             net.send(ply)
+            hook.run("AstroDeactivate", self, ply)
         end
     end
 
