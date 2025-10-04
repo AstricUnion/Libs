@@ -252,6 +252,11 @@ if SERVER then
                 math.rand(-500, 500),
                 math.rand(-500, 500)
             ))
+            local id = body:entIndex()
+            hook.remove("EntityTakeDamage", "AstroDriverDefense" .. id)
+            hook.remove("PlayerEnteredVehicle", "AstroEntered" .. id)
+            hook.remove("PlayerLeaveVehicle", "AstroLeft" .. id)
+            hook.remove("Removed", "AstroRemoved" .. id)
             timer.create("deathExplosion", 0.2, 3, function()
                 local eff = effect.create()
                 eff:setOrigin(self.body:getPos())
