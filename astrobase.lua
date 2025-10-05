@@ -251,11 +251,13 @@ if SERVER then
             self.head:setFrozen(false)
             self.head:setPos(self.head:getPos())
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
-            self.head:setVelocity(Vector(
-                math.rand(-500, 500),
-                math.rand(-500, 500),
-                math.rand(-500, 500)
-            ))
+            timer.simple(0.1, function()
+                self.head:applyForceCenter(Vector(
+                    math.rand(-15000, 15000),
+                    math.rand(-15000, 15000),
+                    math.rand(20000, 30000)
+                ))
+            end)
             local id = self.body:entIndex()
             hook.remove("EntityTakeDamage", "AstroDriverDefense" .. id)
             hook.remove("PlayerEnteredVehicle", "AstroEntered" .. id)
