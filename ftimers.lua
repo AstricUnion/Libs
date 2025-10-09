@@ -2,7 +2,9 @@
 --@author maxobur0001
 --@shared
 
-instances = {}
+-- TODO: Refactor FTimer class
+
+local instances = {}
 
 ---@class FTimer
 FTimer =  {}
@@ -18,7 +20,7 @@ FTimer.__index = FTimer
 ---                 For float function has 1 argument (timer)
 ---@return FTimer object
 function FTimer:new(duration, loops, fractions)
-    local self = setmetatable(
+    local timer = setmetatable(
         {
             loops = loops,
             duration = duration,
@@ -29,42 +31,35 @@ function FTimer:new(duration, loops, fractions)
         FTimer
     )
     local func = coroutine.create(FTimer.update)
-    coroutine.resume(func, self)
-    self.update_func = func
-    table.insert(instances, self)
-    return self
+    coroutine.resume(func, timer)
+    timer.update_func = func
+    table.insert(instances, timer)
+    return timer
 end
 
 
---[[
-    Removes timer
-]]--
+---Removes timer
 function FTimer:remove()
     table.removeByValue(instances, self)
 end
 
 
---[[
-    Pauses timer
-]]--
+---Pauses timer
 function FTimer:pause()
     self.paused = true
 end
 
 
---[[
-    Starts timer
-]]--
+---Starts timer
 function FTimer:start()
     self.paused = false
 end
 
 
---[[
-    Update function. Don't use it in your code
-]]--
-function FTimer:update()
+---Update function. Don't use it in your code
+function FTimer.update(self)
     local ticks = 0
+    local last_tick = 0
     while self.loops ~= 0 do
         coroutine.yield() -- Yielding, to pause until resume
         local time = ticks * game.getTickInterval() -- Gets ticks
@@ -78,26 +73,27 @@ function FTimer:update()
         for second, callback in pairs(self.fractions) do
             -- If fraction with one number
             if isnumber(second) then
-                if process == second then
+                if process >= second and last_tick <= second then
                     callback(self)
                 end
             -- If fraction with range
             elseif isstring(second) then
                 local dur = string.split(second, '-')
-                local start, endd = tonumber(dur[1]), tonumber(dur[2])
-                if process >= start and process <= endd then
-                    local relative = math.timeFraction(start, endd, process)
+                local fr_start, fr_end = tonumber(dur[1]), tonumber(dur[2])
+                if process >= fr_start and process <= fr_end then
+                    local relative = math.timeFraction(fr_start, fr_end, process)
                     callback(self, process, relative)
                 end
             end
         end
+        last_tick = process
         ticks = ticks + 1
     end
 end
 
-hook.add("Think", "fractionalTimers", function()
+hook.add("Tick", "fractionalTimers", function()
     for _, ftimer in ipairs(instances) do
-        if not ftimer.paused then
+        if !ftimer.paused then
             if coroutine.status(ftimer.update_func) == "dead" then
                 ftimer:remove()
                 continue
