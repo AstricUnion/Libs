@@ -166,23 +166,21 @@ if SERVER then
 
     function AstroBase:think(active_callback)
         local frametime = game.getTickInterval()
-        local driver = self.seat:getDriver()
         local gravity = self.physobj:isGravityEnabled()
-        if isValid(driver) then
-            self.driver = driver
+        if isValid(self.driver) then
             if gravity then self.physobj:enableGravity(false) end
             local dir = self:getDirection()
-            local speed = driver:keyDown(IN_KEY.DUCK) and self.sprint or self.speed
+            local speed = self.driver:keyDown(IN_KEY.DUCK) and self.sprint or self.speed
             self.velocity = math.lerpVector(self.ratio, self.velocity, dir * speed * 100 * frametime)
             self.physobj:setVelocity(self.velocity)
             -- Code from Astro Striker by [Squidward Gaming] --
-            local eyeangles = driver:getEyeAngles():setR(0)
+            local eyeangles = self.driver:getEyeAngles():setR(0)
             local ang = self.seat:worldToLocalAngles(eyeangles - self.body:getAngles())
             local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
             self.physobj:addAngleVelocity(angvel)
             --------------------------------------------------- Thanks! :3
             self.head:setAngles(eyeangles)
-            if active_callback then active_callback(driver) end
+            if active_callback then active_callback(self.driver) end
         else
             self.driver = nil
             if !gravity then self.physobj:enableGravity(true) end
@@ -208,6 +206,7 @@ if SERVER then
 
     function AstroBase:enter(ply, seat)
         if self.seat == seat then
+            self.driver = ply
             seat:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
@@ -221,6 +220,7 @@ if SERVER then
 
     function AstroBase:leave(ply, seat)
         if self.seat == seat then
+            self.driver = nil
             seat:setCollisionGroup(COLLISION_GROUP.VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             ply:setColor(Color(255, 255, 255, 255))
