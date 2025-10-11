@@ -3,9 +3,13 @@
 --@shared
 
 
--- Hooks
+-- Hooks --
+
+-- SERVER
 -- "AstroActivate(astro: AstroBase, ply: Player)"
 -- "AstroDeactivate(astro: AstroBase, ply: Player)"
+-- "InputPressed(ply: Player, key: KEY)"
+-- "InputReleased(ply: Player, key: KEY)"
 
 ---Gets key direction of player.
 ---@param ply Player
@@ -274,7 +278,30 @@ if SERVER then
             self.seat:remove()
         end
     end
+
+
+    net.receive("pressed", function(_, ply)
+        local key = net.readInt(32)
+        hook.run("InputPressed", ply, key)
+    end)
+
+
+    net.receive("released", function(_, ply)
+        local key = net.readInt(32)
+        hook.run("InputReleased", ply, key)
+    end)
 else
+    hook.add("InputPressed", "", function(key)
+        if input.getCursorVisible() then return end
+        net.start("pressed")
+        net.writeInt(key, 32)
+        net.send()
+    end)
 
-
+    hook.add("InputReleased", "", function(key)
+        if input.getCursorVisible() then return end
+        net.start("released")
+        net.writeInt(key, 32)
+        net.send()
+    end)
 end
