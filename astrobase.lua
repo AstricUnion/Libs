@@ -11,6 +11,12 @@
 -- "InputPressed(ply: Player, key: KEY)"
 -- "InputReleased(ply: Player, key: KEY)"
 
+-- CLIENT
+-- "AstroEntered(pinPoint: Entity, body: Entity)"
+-- "AstroLeft()"
+
+
+
 ---Gets key direction of player.
 ---@param ply Player
 ---@param negative_key number See IN_KEY enum
@@ -58,10 +64,6 @@ if SERVER then
         ---@type number
         state = nil,
         ---@type number
-        health = nil,
-        ---@type number
-        maxhealth = nil,
-        ---@type number
         speed = nil,
         ---@type number
         sprint = nil,
@@ -75,6 +77,8 @@ if SERVER then
         physobj = nil,
         ---@type Entity
         head = nil,
+        ---@type Hologram
+        cameraPin = nil,
         ---@type Vehicle
         seat = nil,
         ---@type table
@@ -89,11 +93,12 @@ if SERVER then
     ---@param head Entity Head hitbox
     ---@param seat Vehicle Bot seat
     ---@param health number Health of bot
+    ---@param pinOffset? number Camera initial offset
     ---@param speed? number Speed of bot, default 200
     ---@param sprint? number Sprint speed of bot, default 600
     ---@param ratio? number Velocity linear interpolation ratio of bot, default 0.05
     ---@return AstroBase astro Astro object
-    function AstroBase:new(body, head, seat, health, speed, sprint, ratio)
+    function AstroBase:new(body, head, seat, health, pinOffset, speed, sprint, ratio)
         local physobj = body:getPhysicsObject()
         physobj:setMass(1000)
         seat:setParent(body)
@@ -106,11 +111,19 @@ if SERVER then
         body:setHealth(health)
         body:setMaxHealth(health)
 
+        local pin = hologram.create(
+            head:getPos() + pinOffset or Vector(),
+            Angle(),
+            "models/hunter/plates/plate.mdl"
+        )
+        if pin then
+            pin:setColor(Color(0, 0, 0, 0))
+            pin:setParent(head)
+        end
+
         local astro = setmetatable(
             {
                 state = 0,
-                health = health,
-                maxhealth = health,
                 speed = speed or 200,
                 sprint = sprint or 600,
                 velocity = Vector(),
@@ -118,6 +131,7 @@ if SERVER then
                 body = body,
                 physobj = physobj,
                 head = head,
+                cameraPin = pin,
                 seat = seat,
                 filter = {body, head, seat},
                 driver = nil
@@ -179,7 +193,7 @@ if SERVER then
             local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
             self.physobj:addAngleVelocity(angvel)
             --------------------------------------------------- Thanks! :3
-            self.head:setAngles(eyeangles)
+            self.head:setAngles(math.lerpAngle(0.5, self.head:getAngles(), eyeangles))
             if active_callback then active_callback(self.driver) end
         else
             self.driver = nil
@@ -211,7 +225,8 @@ if SERVER then
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
             net.start("OnEnter")
-            net.writeEntity(self.head)
+            net.writeEntity(self.cameraPin)
+            net.writeEntity(self.body)
             net.send(ply)
             hook.run("AstroActivate", self, ply)
         end
@@ -240,13 +255,14 @@ if SERVER then
     end
 
     function AstroBase:isAlive()
-        return self.health > 0
+        return self.body:getHealth() > 0
     end
 
     function AstroBase:damage(amount, callback)
-        if not self:isAlive() then return end
-        self.health = math.clamp(self.health - amount, 0, self.maxhealth)
-        self.body:setHealth(self.health)
+        if !self:isAlive() then return end
+        local health = self.body:getHealth()
+        local maxhealth = self.body:getMaxHealth()
+        self.body:setHealth(math.clamp(health - amount, 0, maxhealth))
         if not self:isAlive() then
             if callback then callback() end
             self.seat:ejectDriver()
@@ -255,13 +271,11 @@ if SERVER then
             self.head:setFrozen(false)
             self.head:setPos(self.head:getPos())
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
-            timer.simple(0.1, function()
-                self.head:applyForceCenter(Vector(
-                    math.rand(-15000, 15000),
-                    math.rand(-15000, 15000),
-                    math.rand(20000, 30000)
-                ))
-            end)
+            self.head:applyForceCenter(Vector(
+                math.rand(-15000, 15000),
+                math.rand(-15000, 15000),
+                math.rand(20000, 30000)
+            ))
             local id = self.body:entIndex()
             hook.remove("EntityTakeDamage", "AstroDriverDefense" .. id)
             hook.remove("PlayerEnteredVehicle", "AstroEntered" .. id)
@@ -291,17 +305,44 @@ if SERVER then
         hook.run("InputReleased", ply, key)
     end)
 else
-    hook.add("InputPressed", "", function(key)
-        if input.getCursorVisible() then return end
-        net.start("pressed")
-        net.writeInt(key, 32)
-        net.send()
+    local function createPressHooks()
+        hook.add("InputPressed", "AstroPressed", function(key)
+            if input.getCursorVisible() then return end
+            net.start("pressed")
+            net.writeInt(key, 32)
+            net.send()
+        end)
+
+        hook.add("InputReleased", "AstroReleased", function(key)
+            if input.getCursorVisible() then return end
+            net.start("released")
+            net.writeInt(key, 32)
+            net.send()
+        end)
+    end
+
+    local function removePressHooks()
+        hook.remove("InputPressed", "AstroPressed")
+        hook.remove("InputReleased", "AstroReleased")
+    end
+
+    net.receive("OnEnter", function()
+        net.readEntity(function(head)
+            net.readEntity(function(body)
+                timer.simple(0.1, function()
+                    enableHud(nil, true)
+                    createPressHooks()
+                    hook.run("AstroEntered", head, body)
+                end)
+            end)
+        end)
     end)
 
-    hook.add("InputReleased", "", function(key)
-        if input.getCursorVisible() then return end
-        net.start("released")
-        net.writeInt(key, 32)
-        net.send()
+    net.receive("OnLeave", function()
+        timer.simple(0.1, function()
+            enableHud(nil, false)
+            removePressHooks()
+            hook.run("AstroLeave")
+        end)
     end)
 end
