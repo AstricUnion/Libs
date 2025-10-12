@@ -188,12 +188,12 @@ if SERVER then
             self.velocity = math.lerpVector(self.ratio, self.velocity, dir * speed * 100 * frametime)
             self.physobj:setVelocity(self.velocity)
             -- Code from Astro Striker by [Squidward Gaming] --
-            local eyeangles = self.driver:getEyeAngles():setR(0)
-            local ang = self.seat:worldToLocalAngles(eyeangles - self.body:getAngles())
+            local eyeangles = self.driver:getEyeAngles()
+            local ang = self.body:worldToLocalAngles(eyeangles)
             local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
             self.physobj:addAngleVelocity(angvel)
             --------------------------------------------------- Thanks! :3
-            self.head:setAngles(math.lerpAngle(0.5, self.head:getAngles(), eyeangles))
+            self.head:setAngles(math.lerpAngle(0.5, self.head:getAngles(), self.seat:worldToLocalAngles(eyeangles)))
             if active_callback then active_callback(self.driver) end
         else
             self.driver = nil
