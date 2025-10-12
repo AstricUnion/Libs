@@ -50,7 +50,9 @@ if SERVER then
         holo2:setColor(Color(250, 200, 200))
         holo2:setParent(holo)
         holo3:setParent(holo)
-        holo:setVelocity(velocity * angle:getForward())
+        timer.simple(0.1, function()
+            holo:setVelocity(velocity * angle:getForward())
+        end)
         local self = setmetatable(
             {
                 holo = holo,
@@ -125,7 +127,7 @@ if SERVER then
         holo:setParent(hitbox)
         hitbox:setMass(200)
         table.insert(ignore, hitbox)
-        local self = setmetatable(
+        return setmetatable(
             {
                 holo = holo,
                 hitbox = hitbox,
@@ -138,7 +140,6 @@ if SERVER then
             },
             Blaster
         )
-        return self
     end
 
 
