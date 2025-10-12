@@ -309,6 +309,25 @@ if SERVER then
         net.writeInt(self.parent:entIndex(), 32)
         net.send(find.allPlayers())
     end
+
+
+    ---------- Attack with arms -----------
+    function AttackDamage(min, max, direction, damage, inflictor, ignore)
+        local entsToDamage = find.inBox(min, max)
+        for _, ent in ipairs(entsToDamage) do
+            if table.hasValue(ignore, ent) then continue end
+            if isValid(ent) and ent:isValidPhys() then
+                local velocityPermitted, _ = hasPermission("entities.setVelocity", ent)
+                if velocityPermitted and game.getTickCount() % 2 == 0 and isValid(ent) then
+                    ent:getPhysicsObject():setVelocity(direction * 1000)
+                end
+                local damagePermitted, _ = hasPermission("entities.applyDamage", ent)
+                if damagePermitted then
+                    ent:applyDamage(math.clamp(damage, 0, ent:getHealth()), nil, inflictor, DAMAGE.CRUSH)
+                end
+            end
+        end
+    end
 else
     local LaserModel = {
         ---@type Hologram
