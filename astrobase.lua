@@ -8,6 +8,9 @@
 -- SERVER
 -- "AstroActivate(astro: AstroBase, ply: Player)"
 -- "AstroDeactivate(astro: AstroBase, ply: Player)"
+-- "AstroThink(astro: AstroBase, driver: Player)"
+-- "AstroDamage(astro: AstroBase, amount: number)"
+-- "AstroDeath(astro: AstroBase)"
 -- "InputPressed(ply: Player, key: KEY)"
 -- "InputReleased(ply: Player, key: KEY)"
 
@@ -156,6 +159,15 @@ if SERVER then
         hook.add("Removed", "AstroRemoved" .. id, function()
             if astro.driver then astro.driver:setColor(Color(255, 255, 255, 255)) end
         end)
+        -- Astro think
+        hook.add("Think", "AstroThink" .. id, function()
+            astro:think()
+        end)
+        -- Astro damage
+        hook.add("PostEntityTakeDamage", "AstroDamage" .. id, function(target, _, _, amount)
+            if target ~= body then return end
+            astro:damage(amount)
+        end)
         return astro
     end
 
@@ -170,34 +182,23 @@ if SERVER then
             getKeyDirection(self.driver, IN_KEY.MOVERIGHT, IN_KEY.MOVELEFT),
             0
         ):getRotated(eyeangles)
-        dir.z = math.clamp(
-            dir.z + getKeyDirection(self.driver, IN_KEY.SPEED, IN_KEY.JUMP),
-            -1,
-            1
-        )
+        dir.z = math.clamp(dir.z + getKeyDirection(self.driver, IN_KEY.SPEED, IN_KEY.JUMP), -1, 1)
         return dir
     end
 
-    function AstroBase:think(active_callback)
+    function AstroBase:think()
         local frametime = game.getTickInterval()
-        local gravity = self.physobj:isGravityEnabled()
         if isValid(self.driver) then
-            if gravity then self.physobj:enableGravity(false) end
             local dir = self:getDirection()
             local speed = self.driver:keyDown(IN_KEY.DUCK) and self.sprint or self.speed
             self.velocity = math.lerpVector(self.ratio, self.velocity, dir * speed * 100 * frametime)
             self.physobj:setVelocity(self.velocity)
-            -- Code from Astro Striker by [Squidward Gaming] --
             local eyeangles = self.driver:getEyeAngles()
             local ang = self.body:worldToLocalAngles(eyeangles)
             local angvel = ang:getQuaternion():getRotationVector() - self.body:getAngleVelocity() / 5
             self.physobj:addAngleVelocity(angvel)
-            --------------------------------------------------- Thanks! :3
             self.head:setAngles(math.lerpAngle(0.5, self.head:getAngles(), self.seat:worldToLocalAngles(eyeangles)))
-            if active_callback then active_callback(self.driver) end
-        else
-            self.driver = nil
-            if !gravity then self.physobj:enableGravity(true) end
+            hook.run("AstroThink", self, self.driver)
         end
         self.seat:setAngles(Angle())
     end
@@ -224,6 +225,7 @@ if SERVER then
             seat:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
+            self.physobj:enableGravity(false)
             net.start("OnEnter")
             net.writeEntity(self.cameraPin)
             net.writeEntity(self.body)
@@ -239,6 +241,7 @@ if SERVER then
             seat:setCollisionGroup(COLLISION_GROUP.VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             ply:setColor(Color(255, 255, 255, 255))
+            self.physobj:enableGravity(true)
             net.start("OnLeave")
             net.send(ply)
             hook.run("AstroDeactivate", self, ply)
@@ -258,13 +261,15 @@ if SERVER then
         return self.body:getHealth() > 0
     end
 
-    function AstroBase:damage(amount, callback)
+    function AstroBase:damage(amount)
         if !self:isAlive() then return end
         local health = self.body:getHealth()
         local maxhealth = self.body:getMaxHealth()
+        amount = hook.run("AstroDamage", self, amount) or amount
         self.body:setHealth(math.clamp(health - amount, 0, maxhealth))
-        if not self:isAlive() then
-            if callback then callback() end
+        if !self:isAlive() then
+            if self.driver then enableHud(self.driver, false) end
+            self.driver = nil
             self.seat:ejectDriver()
             self.physobj:enableGravity(true)
             self.head:setParent(nil)
@@ -281,6 +286,8 @@ if SERVER then
             hook.remove("PlayerEnteredVehicle", "AstroEntered" .. id)
             hook.remove("PlayerLeaveVehicle", "AstroLeft" .. id)
             hook.remove("Removed", "AstroRemoved" .. id)
+            hook.remove("Think", "AstroThink" .. id)
+            hook.remove("PostEntityTakeDamage", "AstroDamage" .. id)
             timer.create("deathExplosion", 0.2, 3, function()
                 local eff = effect.create()
                 eff:setOrigin(self.body:getPos())
@@ -290,6 +297,7 @@ if SERVER then
                 self.body:emitSound("weapons/underwater_explode3.wav")
             end)
             self.seat:remove()
+            hook.run("AstroDeath", self)
         end
     end
 
