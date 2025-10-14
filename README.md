@@ -6,6 +6,7 @@ There is some libs:
 * holos.lua - very easy hologram creator
 * light.lua - Server-side light.create
 * sounds.lua - Server-side preload and play sounds within bass.loadUrl (REQUIRES NOBLOCK SOUNDS)
+* tweens.lua - Tweens for animations (like in Godot, Unity, etc)
 * ui.lua - UI library for Astro HUD, but you may find something interesting in it
 
 ## Include it in your bot or other chip:
@@ -28,6 +29,9 @@ require("light")
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/sounds.lua as sounds
 require("sounds")
 
+--@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/tweens.lua as tweens
+require("tweens")
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ui.lua as ui
 require("ui")
 ```
@@ -38,4 +42,6 @@ require("ui")
 - [ ] Make more UI elements
 - [ ] Make 3D UI
 - [ ] Refactor FTimers
-- [ ] Refactor AstroBase
+- [x] Refactor AstroBase
+- [ ] Normal documentation
+- [ ] Normal examples
