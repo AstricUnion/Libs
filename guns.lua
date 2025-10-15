@@ -323,7 +323,7 @@ if SERVER then
                 end
                 local damagePermitted, _ = hasPermission("entities.applyDamage", ent)
                 if damagePermitted then
-                    ent:applyDamage(math.clamp(damage, 0, ent:getHealth()), nil, inflictor, DAMAGE.CRUSH)
+                    ent:applyDamage(damage, nil, inflictor, DAMAGE.CRUSH)
                 end
             end
         end

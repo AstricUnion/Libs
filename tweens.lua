@@ -7,6 +7,10 @@ local TWEENS = {}
 
 ---@enum PROPERTY
 PROPERTY = {
+    NONE = {
+        function() end,
+        function() end
+    },
     POS = {
         function(x) return x:getPos() end,
         function(x, set) x:setPos(set) end
@@ -34,6 +38,10 @@ PROPERTY = {
     VELOCITY = {
         function(x) return x:getVelocity() end,
         function(x, set) x:setVelocity(set) end
+    },
+    ADDVELOCITY = {
+        function(x) return x:getVelocity() end,
+        function(x, set) x:addVelocity(set) end
     }
 }
 
@@ -45,21 +53,22 @@ PROPERTY = {
 ---@field to any Total for property
 ---@field delta any Delta of position for property
 ---@field ease function Function to ease
----@field callback function Callback for parameter
+---@field callback function Callback for end of parameter
+---@field process_callback function Callback for process of parameter
 ---@field get function Function to get progress
 ---@field set function Function to set progress
 Param = {}
-
 
 ---Create new parameter
 ---@param duration number
 ---@param object Entity
 ---@param property PROPERTY
----@param to any
+---@param to any | function(): any
 ---@param ease function(fraction: number): number
 ---@param callback? function(tween: Tween)
+---@param process_callback? function(tween: Tween, fraction: number)
 ---@return Param
-function Param:new(duration, object, property, to, ease, callback)
+function Param:new(duration, object, property, to, ease, callback, process_callback)
     return setmetatable(
         {
             duration = duration,
@@ -68,12 +77,45 @@ function Param:new(duration, object, property, to, ease, callback)
             delta = Vector(),
             ease = ease,
             callback = callback,
+            process_callback = process_callback,
             get = property[1],
             set = property[2]
         },
         Param
     )
 end
+
+
+---Fraction class. Replace of fractional timers, just an empty parameter
+---@class Fraction: Param
+Fraction = {}
+
+
+---Create new fraction
+---@param duration number
+---@param ease function(fraction: number)
+---@param callback? function(tween: Tween)
+---@param process_callback? function(tween: Tween, fraction: number)
+---@return Fraction
+function Fraction:new(duration, ease, callback, process_callback)
+    return setmetatable(
+        {
+            duration = duration,
+            object = nil,
+            to = nil,
+            delta = nil,
+            ease = ease,
+            callback = callback,
+            process_callback = process_callback,
+            get = nil,
+            set = nil
+        },
+        Fraction
+    )
+end
+
+setmetatable(Fraction, {__index = Param})
+
 
 
 ---Tween class
@@ -113,8 +155,9 @@ end
 
 ---Add sleep to tween
 ---@param wait number Time to sleep
-function Tween:sleep(wait)
-    table.insert(self.parameters, {sleep = wait})
+---@param callback function(tween: Tween) Time to sleep
+function Tween:sleep(wait, callback)
+    table.insert(self.parameters, {sleep = wait, callback = callback})
 end
 
 
@@ -155,13 +198,16 @@ end
 
 ---To progress an param
 local function paramProgress(param, progress)
-    local smoothed = math.round(param.ease(math.timeFraction(0, param.duration, progress)), 3)
-    smoothed = math.clamp(smoothed, 0, 1)
-    local pos = param.get(param.object)
-    local initial = (pos - param.delta)
-    local pos_smoothed = (param.to - initial) * smoothed
-    param.set(param.object, initial + pos_smoothed)
-    param.delta = pos_smoothed
+    local fraction = math.clamp(progress / param.duration, 0, 1)
+    local smoothed = math.round(param.ease(fraction), 3)
+    if param.object then
+        local pos = param.get(param.object)
+        local to = isfunction(param.to) and param.to() or param.to
+        local initial = (pos - param.delta)
+        local pos_smoothed = (to - initial) * smoothed
+        param.set(param.object, initial + pos_smoothed)
+        param.delta = pos_smoothed
+    end
     return smoothed
 end
 
@@ -171,6 +217,7 @@ function Tween:process()
     for _, params in ipairs(self.parameters) do
         if params.sleep then
             coroutine.wait(params.sleep)
+            if params.callback then params.callback(self) end
             continue
         end
         local progress = 0
@@ -183,7 +230,7 @@ function Tween:process()
                 ---@cast param Param
                 if table.hasValue(finished, i) then continue end
                 local smoothed = paramProgress(param, progress)
-
+                if param.process_callback then param.process_callback(self, smoothed) end
                 if smoothed >= 1 then
                     table.insert(finished, i)
                     if param.callback then param.callback(self) end
