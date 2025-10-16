@@ -312,11 +312,14 @@ if SERVER then
 
 
     ---------- Attack with arms -----------
-    function AttackDamage(min, max, direction, damage, inflictor, ignore)
+    function AttackDamage(min, max, direction, damage, inflictor, ignore, attacked)
         local entsToDamage = find.inBox(min, max)
+        attacked = attacked or {}
         for _, ent in ipairs(entsToDamage) do
             if table.hasValue(ignore, ent) then continue end
-            if isValid(ent) and ent:isValidPhys() then
+            if table.hasValue(attacked, ent) then continue end
+            if isValid(ent) and ent:isValidPhys() and ent:getHealth() > 0 then
+                table.insert(attacked, ent)
                 local velocityPermitted, _ = hasPermission("entities.setVelocity", ent)
                 if velocityPermitted and game.getTickCount() % 2 == 0 and isValid(ent) then
                     ent:getPhysicsObject():setVelocity(direction * 1000)
@@ -327,6 +330,7 @@ if SERVER then
                 end
             end
         end
+        return attacked
     end
 else
     local LaserModel = {
@@ -378,7 +382,7 @@ else
         local dist = pos:getDistance(res.HitPos)
         self.holo:setPos(pos + (res.Normal * (dist / 2)))
         self.holo:setSize(Vector(size - 5, size - 5, dist))
-        self.holo2:setSize(Vector(size + 5, size + 5, dist))
+        self.holo2:setSize(Vector(size + 10, size + 10, dist))
         local eye = eyePos()
         local localEyes = self.holo:worldToLocal(eye):getAngleEx(Vector())
         self.holo2:setMaterial("cable/redlaser")

@@ -49,6 +49,7 @@ PROPERTY = {
 ---Param class
 ---@class Param
 ---@field duration number Duration for parameter
+---@field starttime number Start time for parameter
 ---@field object Entity Object for parameter
 ---@field to any Total for property
 ---@field delta any Delta of position for property
@@ -60,7 +61,7 @@ PROPERTY = {
 Param = {}
 
 ---Create new parameter
----@param duration number
+---@param duration number | table
 ---@param object Entity
 ---@param property PROPERTY
 ---@param to any | function(): any
@@ -69,13 +70,19 @@ Param = {}
 ---@param process_callback? function(tween: Tween, fraction: number)
 ---@return Param
 function Param:new(duration, object, property, to, ease, callback, process_callback)
+    local starttime = 0
+    if istable(duration) then
+        starttime = duration[1]
+        duration = duration[2] - starttime
+    end
     return setmetatable(
         {
             duration = duration,
+            starttime = starttime,
             object = object,
             to = to,
             delta = Vector(),
-            ease = ease,
+            ease = ease or function(x) return x end,
             callback = callback,
             process_callback = process_callback,
             get = property[1],
@@ -93,18 +100,24 @@ Fraction = {}
 
 ---Create new fraction
 ---@param duration number
----@param ease function(fraction: number)
+---@param ease? function(fraction: number)
 ---@param callback? function(tween: Tween)
 ---@param process_callback? function(tween: Tween, fraction: number)
 ---@return Fraction
 function Fraction:new(duration, ease, callback, process_callback)
+    local starttime = 0
+    if istable(duration) then
+        starttime = duration[1]
+        duration = duration[2] - starttime
+    end
     return setmetatable(
         {
             duration = duration,
+            starttime = starttime,
             object = nil,
             to = nil,
             delta = nil,
-            ease = ease,
+            ease = ease or function(x) return x end,
             callback = callback,
             process_callback = process_callback,
             get = nil,
@@ -120,16 +133,11 @@ setmetatable(Fraction, {__index = Param})
 
 ---Tween class
 ---@class Tween
-Tween = {
-    ---@type table
-    parameters = nil,
-
-    ---@type boolean
-    paused = nil,
-
-    ---@type thread
-    thread = nil
-}
+---@field parameters table
+---@field paused boolean
+---@field loop boolean
+---@field thread thread
+Tween = {}
 Tween.__index = Tween
 
 
@@ -139,6 +147,7 @@ function Tween:new()
         {
             parameters = {},
             paused = true,
+            loop = false,
             thread = nil
         },
         Tween
@@ -177,6 +186,13 @@ function Tween:pause()
 end
 
 
+---Set tween to loop
+---@param state boolean
+function Tween:setLoop(state)
+    self.loop = state
+end
+
+
 ---Remove tween from process
 function Tween:remove()
     table.removeByValue(TWEENS, self)
@@ -198,7 +214,7 @@ end
 
 ---To progress an param
 local function paramProgress(param, progress)
-    local fraction = math.clamp(progress / param.duration, 0, 1)
+    local fraction = math.clamp((progress - param.starttime) / param.duration, 0, 1)
     local smoothed = math.round(param.ease(fraction), 3)
     if param.object then
         local pos = param.get(param.object)
@@ -214,33 +230,39 @@ end
 
 ---Process tween. this function is a coroutine
 function Tween:process()
-    for _, params in ipairs(self.parameters) do
-        if params.sleep then
-            coroutine.wait(params.sleep)
-            if params.callback then params.callback(self) end
-            continue
-        end
-        local progress = 0
-        local finished = {}
-        while progress >= 0 do
-            coroutine.yield()
-            local tick = game.getTickInterval()
-            progress = progress + tick
-            for i, param in ipairs(params) do
-                ---@cast param Param
-                if table.hasValue(finished, i) then continue end
-                local smoothed = paramProgress(param, progress)
-                if param.process_callback then param.process_callback(self, smoothed) end
-                if smoothed >= 1 then
-                    table.insert(finished, i)
-                    if param.callback then param.callback(self) end
+    local loop = true
+    while loop do
+        for _, params in ipairs(self.parameters) do
+            if params.sleep then
+                coroutine.wait(params.sleep)
+                if params.callback then params.callback(self) end
+                continue
+            end
+            local progress = 0
+            local finished = {}
+            while progress >= 0 do
+                coroutine.yield()
+                local tick = game.getTickInterval()
+                progress = progress + tick
+                for i, param in ipairs(params) do
+                    ---@cast param Param
+                    if table.hasValue(finished, i) then continue end
+                    if progress < param.starttime then continue end
+                    local smoothed = paramProgress(param, progress)
+                    if param.process_callback then param.process_callback(self, smoothed) end
+                    if smoothed >= 1 then
+                        table.insert(finished, i)
+                        param.delta = Vector()
+                        if param.callback then param.callback(self) end
+                    end
+                end
+
+                if #finished == #params then
+                    break
                 end
             end
-
-            if #finished == #params then
-                break
-            end
         end
+        if !self.loop then return end
     end
 end
 

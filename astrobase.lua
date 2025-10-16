@@ -1,4 +1,4 @@
---@name AstroBase (BASE FOR ALL BOTS, DON'T WORK)
+--@name AstroBase
 --@author AstricUnion
 --@shared
 
