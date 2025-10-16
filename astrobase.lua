@@ -113,6 +113,7 @@ if SERVER then
 
         body:setHealth(health)
         body:setMaxHealth(health)
+        body:setPhysMaterial("Solidmetal")
 
         local pin = hologram.create(
             head:getPos() + pinOffset or Vector(),

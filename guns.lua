@@ -373,12 +373,16 @@ else
             trace.decal("Dark", res.HitPos, res.HitPos + res.Normal)
         end
         self.holo3:setPos(res.HitPos)
-        local size = ((game.getTickCount() % 2 * -3) + self.diameter)
+        local size = (game.getTickCount() % 2 * -3) + self.diameter
         self.holo3:setSize(Vector(size + self.damage_diameter))
         local dist = pos:getDistance(res.HitPos)
         self.holo:setPos(pos + (res.Normal * (dist / 2)))
         self.holo:setSize(Vector(size - 5, size - 5, dist))
-        self.holo2:setSize(Vector(size, size, dist))
+        self.holo2:setSize(Vector(size + 5, size + 5, dist))
+        local eye = eyePos()
+        local localEyes = self.holo:worldToLocal(eye):getAngleEx(Vector())
+        self.holo2:setMaterial("cable/redlaser")
+        self.holo2:setLocalAngles(localEyes:setP(0) + Angle(0, 90, 0))
     end
 
     --- Remove laser
@@ -434,9 +438,8 @@ else
         holo3:setSize(Vector(tab.diameter + tab.damage_diameter))
 
         holo2:suppressEngineLighting(true)
-        holo2:setMaterial("debug/debugwhite")
         holo2:setColor(Color(255, 0, 0))
-        holo2:setCullMode(1)
+
         local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0, tab.damage_diameter, tab.filter)
         models[tab.parent:entIndex()] = model
         FTimer:new(0.25, 1, {

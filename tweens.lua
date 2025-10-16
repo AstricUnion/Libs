@@ -155,7 +155,7 @@ end
 
 ---Add sleep to tween
 ---@param wait number Time to sleep
----@param callback function(tween: Tween) Time to sleep
+---@param callback? function(tween: Tween) Time to sleep
 function Tween:sleep(wait, callback)
     table.insert(self.parameters, {sleep = wait, callback = callback})
 end
