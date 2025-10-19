@@ -34,16 +34,17 @@ if SERVER then
     ---@param damage number | nil Maximum damage of a projectile explosion. Default 50
     ---@param radius number | nil Maximum radius of a projectile explosion. Default 50
     ---@param timeout number | nil Maximum lifetime of a projectile explosion. Default 3
-    ---@return BlasterProjectile object
+    ---@return BlasterProjectile? object
     function BlasterProjectile:new(ignore, position, angle, scale, velocity, damage, radius, timeout)
-        local velocity = velocity or 10000
-        local position = position
-        local scale = scale or 1
+        velocity = velocity or 10000
+        position = position
+        scale = scale or 1
         local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(4, 0.5, -0.5) * scale)
         local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.6, 0.45, -0.45) * scale)
         local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.2, 0.4, 0.4) * scale)
+        if !(holo and holo2 and holo3) then return end
         holo:suppressEngineLighting(true)
-        holo:setTrails(scale * 15, 0, 0, "effects/beam_generic01", Color(255, 0, 0))
+        holo:setTrails(scale * 15, 0, 1, "effects/beam_generic01", Color(255, 0, 0))
         holo2:suppressEngineLighting(true)
         holo3:suppressEngineLighting(true)
         holo:setColor(Color(255, 0, 0))
@@ -51,9 +52,10 @@ if SERVER then
         holo2:setParent(holo)
         holo3:setParent(holo)
         timer.simple(0.1, function()
+            if !isValid(holo) then return end
             holo:setVelocity(velocity * angle:getForward())
         end)
-        local self = setmetatable(
+        local proj = setmetatable(
             {
                 holo = holo,
                 ray_length = velocity / 25,
@@ -64,19 +66,17 @@ if SERVER then
             },
             BlasterProjectile
         )
-        table.insert(projectiles, self)
+        table.insert(projectiles, proj)
         timer.simple(timeout or 3, function()
-            if not isValid(self.holo) then
-                return
-            end
-            self:explode(self.holo:getPos())
+            if !isValid(proj.holo) then return end
+            self:explode(proj.holo:getPos())
         end)
-        return self
+        return proj
     end
 
 
     ---Explodes projectile on position and deletes it
-    ---@param pos Position of explode
+    ---@param pos Vector Position of explode
     function BlasterProjectile:explode(pos)
         self.holo:remove()
         game.blastDamage(pos, self.radius, self.damage)
@@ -106,26 +106,18 @@ if SERVER then
     Blaster.__index = Blaster
 
 
-    function Blaster:new(pos, ignore, health, ammo, reloadtime, holo, hitbox)
-        local ignore = ignore or {}
-        local holo = holo or hologram.createPart(
-            Holo(SubHolo(Vector(-5,0,2),Angle(0,0,0),"models/hunter/blocks/cube025x025x025.mdl",Vector(1,1,1),false,Color(255,0,0,0))),
-            Holo(SubHolo(Vector(-28,0,-2),Angle(180,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
-            Holo(SubHolo(Vector(-28,0,6),Angle(0,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
-            Holo(SubHolo(Vector(-28,-5,2),Angle(-90,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
-            Holo(SubHolo(Vector(-28,5,2),Angle(90,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
-            Holo(SubHolo(Vector(-19,0,12),Angle(180,0,0),"models/combine_dropship_container.mdl",Vector(0.12,0.12,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
-            Holo(SubHolo(Vector(25,0,2),Angle(90,0,0),"models/Items/combine_rifle_ammo01.mdl",Vector(1.8,1.8,1.8),false,Color(255,40,40)))
-        )
-        local x, y, z = 50, 10, 10
-        local hitbox = hitbox or prop.createCustom(pos, Angle(), {{
-            Vector(-x / 2, -y, -z), Vector(x, -y, -z), Vector(x, y, -z), Vector(-x / 2, y, -z),
-            Vector(-x / 2, -y, z), Vector(x, -y, z), Vector(x, y, z), Vector(-x / 2, y, z),
-        }}, true)
-        hitbox:setColor(Color(0, 0, 0, 0))
-        holo:setPos(pos)
+    ---Create new blaster object
+    ---@param holo Hologram
+    ---@param hitbox Entity
+    ---@param health? number
+    ---@param ammo? number
+    ---@param reloadtime? number
+    ---@param ignore? table
+    ---@return table
+    function Blaster:new(holo, hitbox, health, ammo, reloadtime, ignore)
+        ignore = ignore or {}
+        hitbox:setMass(100)
         holo:setParent(hitbox)
-        hitbox:setMass(200)
         table.insert(ignore, hitbox)
         return setmetatable(
             {
@@ -340,6 +332,8 @@ else
         holo2 = nil,
         ---@type Hologram
         holo3 = nil,
+        ---@type Hologram
+        holo4 = nil,
         ---@type Entity
         parent = nil,
         ---@type number
@@ -353,12 +347,13 @@ else
 
     local models = {}
 
-    function LaserModel:new(holo, holo2, holo3, parent, diameter, damage_diameter, filter)
+    function LaserModel:new(holo, holo2, holo3, holo4, parent, diameter, damage_diameter, filter)
         return setmetatable(
             {
                 holo = holo,
                 holo2 = holo2,
                 holo3 = holo3,
+                holo4 = holo4,
                 parent = parent,
                 diameter = diameter,
                 damage_diameter = damage_diameter,
@@ -367,6 +362,9 @@ else
             LaserModel
         )
     end
+
+    local laserEndEffect = effect.create()
+    laserEndEffect:setMagnitude(2)
 
     --- Think function. Place it in RenderOffscreen to better result
     function LaserModel:think()
@@ -383,10 +381,16 @@ else
         self.holo:setPos(pos + (res.Normal * (dist / 2)))
         self.holo:setSize(Vector(size - 5, size - 5, dist))
         self.holo2:setSize(Vector(size + 10, size + 10, dist))
+        self.holo4:setSize(Vector(size + 64, size + 64, 128))
         local eye = eyePos()
         local localEyes = self.holo:worldToLocal(eye):getAngleEx(Vector())
         self.holo2:setMaterial("cable/redlaser")
         self.holo2:setLocalAngles(localEyes:setP(0) + Angle(0, 90, 0))
+        if tick % 5 == 0 and effect.canCreate() then
+            laserEndEffect:setRadius(self.diameter / 4)
+            laserEndEffect:setOrigin(self.holo3:getPos())
+            laserEndEffect:play("Sparks")
+        end
     end
 
     --- Remove laser
@@ -395,6 +399,7 @@ else
         self.holo:remove()
         self.holo2:remove()
         self.holo3:remove()
+        self.holo4:remove()
     end
 
     hook.add("RenderOffscreen", "", function()
@@ -429,22 +434,28 @@ else
         local holo = hologram.create(tab.parent:getPos(), tab.parent:getAngles(), "models/holograms/hq_cylinder.mdl")
         local holo2 = hologram.create(tab.parent:getPos(), tab.parent:getAngles(), "models/holograms/hq_cylinder.mdl")
         local holo3 = hologram.create(tab.parent:getPos(), tab.parent:getAngles(), "models/holograms/hq_sphere.mdl")
-        if !(holo and holo2 and holo3) then return end
+        local holo4 = hologram.create(tab.parent:getPos(), tab.parent:getAngles(), "models/effects/vol_light64x128.mdl")
+        if !(holo and holo2 and holo3 and holo4) then return end
         holo:setParent(tab.parent)
         holo2:setParent(holo)
+        holo4:setParent(tab.parent)
 
         holo:setLocalAngles(Angle(90, 0, 0))
         holo:suppressEngineLighting(true)
         holo:setMaterial("debug/debugwhite")
 
+        holo2:suppressEngineLighting(true)
+        holo2:setColor(Color(255, 0, 0))
+
         holo3:suppressEngineLighting(true)
         holo3:setMaterial("debug/debugwhite")
         holo3:setSize(Vector(tab.diameter + tab.damage_diameter))
 
-        holo2:suppressEngineLighting(true)
-        holo2:setColor(Color(255, 0, 0))
+        holo4:setLocalAngles(Angle(-90, 0, 0))
+        holo4:suppressEngineLighting(true)
+        holo4:setColor(Color(255, 0, 0, 100))
 
-        local model = LaserModel:new(holo, holo2, holo3, tab.parent, 0, tab.damage_diameter, tab.filter)
+        local model = LaserModel:new(holo, holo2, holo3, holo4, tab.parent, 0, tab.damage_diameter, tab.filter)
         models[tab.parent:entIndex()] = model
         FTimer:new(0.25, 1, {
             ["0-1"] = function(_, _, fraction)

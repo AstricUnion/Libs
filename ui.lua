@@ -28,21 +28,21 @@ Bar.__index = Bar
 ---@param h number Height
 ---@param percent number Start percent (from 0. to 1.)
 function Bar:new(x, y, w, h, percent)
-    local self = setmetatable(
+    local renderTarget = "bar" .. tostring(x + y)
+    return setmetatable(
         {
             x = x,
             y = y,
             w = w,
             h = h,
+            renderTarget = renderTarget,
             percent = math.clamp(percent, 0, 1),
-            current_percent = math.clamp(percent, 0, 1),
             label_left = nil,
             label_right = nil,
             barcolor = Color(255, 255, 255)
         },
         Bar
     )
-    return self
 end
 
 
@@ -68,10 +68,24 @@ function Bar:setBarColor(color)
 end
 
 function Bar:draw()
-    self.current_percent = math.lerp(0.2, self.current_percent, self.percent)
+    --[[ A raw light effect, poorly optimized
+    if !render.renderTargetExists(self.renderTarget) then render.createRenderTarget(self.renderTarget) end
+    render.selectRenderTarget(self.renderTarget)
+    render.clear(Color(0, 0, 0, 0))
+    render.setColor(Color(255, 255, 255))
+    render.drawRectOutline(20, 20, self.w, self.h, 4)
+    render.drawRect(24, 24, (self.w - 8) * self.percent, self.h - 8)
+    render.drawBlurEffect(2, 2, 5)
+    render.selectRenderTarget()
+
+    render.setRenderTargetTexture(self.renderTarget)
+    render.drawTexturedRect(self.x - 20, self.y - 20, 1024, 1024)
+    render.setRenderTargetTexture()
+    ]]
+
     render.drawRectOutline(self.x, self.y, self.w, self.h, 2)
     render.setColor(self.barcolor)
-    render.drawRect(self.x + 4, self.y + 4, (self.w - 8) * self.current_percent, self.h - 8)
+    render.drawRect(self.x + 4, self.y + 4, (self.w - 8) * self.percent, self.h - 8)
     render.setColor(Color(255, 255, 255))
     render.setFont(fontMontserrat50)
     if self.label_left then
