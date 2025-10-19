@@ -35,6 +35,15 @@ PROPERTY = {
         function(x) return x:getAngleVelocity() end,
         function(x, set) x:setAngleVelocity(set) end
     },
+    -- Only with holograms!
+    LOCALANGULARVELOCITY = {
+        function(x) return x.angular end,
+        function(x, set)
+            if !x.angular then x.angular = Vector() end
+            x:setLocalAngularVelocity(set)
+            x.angular = set
+        end
+    },
     VELOCITY = {
         function(x) return x:getVelocity() end,
         function(x, set) x:setVelocity(set) end

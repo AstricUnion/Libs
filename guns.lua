@@ -44,15 +44,15 @@ if SERVER then
         local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.2, 0.4, 0.4) * scale)
         if !(holo and holo2 and holo3) then return end
         holo:suppressEngineLighting(true)
-        holo:setTrails(scale * 15, 0, 1, "effects/beam_generic01", Color(255, 0, 0))
         holo2:suppressEngineLighting(true)
         holo3:suppressEngineLighting(true)
         holo:setColor(Color(255, 0, 0))
         holo2:setColor(Color(250, 200, 200))
         holo2:setParent(holo)
         holo3:setParent(holo)
-        timer.simple(0.1, function()
+        timer.simple(0, function()
             if !isValid(holo) then return end
+            holo:setTrails(scale * 20, 0, 0.3, "trails/plasma", Color(255, 0, 0))
             holo:setVelocity(velocity * angle:getForward())
         end)
         local proj = setmetatable(
@@ -78,6 +78,7 @@ if SERVER then
     ---Explodes projectile on position and deletes it
     ---@param pos Vector Position of explode
     function BlasterProjectile:explode(pos)
+        if !isValid(self.holo) then return end
         self.holo:remove()
         game.blastDamage(pos, self.radius, self.damage)
         blasterEffect(pos)

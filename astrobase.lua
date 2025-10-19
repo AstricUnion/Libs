@@ -18,6 +18,12 @@
 -- "AstroEntered(pinPoint: Entity, body: Entity)"
 -- "AstroLeft()"
 
+-- Misc.
+local OWNER = owner()
+
+-- Envirnoment variables
+local WHITELIST = table.add({owner():getSteamID()}, WHITELIST or {})
+local PROTECT = PROTECT and true or false
 
 
 ---Gets key direction of player.
@@ -31,64 +37,76 @@ end
 
 
 if SERVER then
-    --Hitbox class
-    hitbox = {}
-
-
-    ---Cube-formed hitbox
-    ---@param pos Vector Position of hitbox
-    ---@param angle Angle Angle of hitbox
-    ---@param size Vector Size of hitbox
-    ---@param freeze boolean? Make hitbox freezed, default false
-    ---@param visible boolean? Make hitbox visible, default false
-    ---@return Entity hitbox Hitbox entity
-    function hitbox.cube(pos, angle, size, freeze, visible)
-        local hitbox = prop.createCustom(
-            pos,
-            angle,
-            {
-                {
-                    Vector(-size.x, -size.y, -size.z), Vector(size.x, -size.y, -size.z),
-                    Vector(size.x, size.y, -size.z), Vector(-size.x, size.y, -size.z),
-                    Vector(-size.x, -size.y, size.z), Vector(size.x, -size.y, size.z),
-                    Vector(size.x, size.y, size.z), Vector(-size.x, size.y, size.z),
-                },
-            },
-            freeze
-        )
-        if not visible then hitbox:setColor(Color(255, 255, 255, 0)) end
-        return hitbox
+    local function whitelistLog(text)
+        print(Color(0, 255, 0), "[Whitelist] ", Color(255, 255, 255), text)
     end
 
 
+    -- so bad, sorry
+    hook.add("PlayerSay", "WhitelistCommands", function(ply, text)
+        if ply ~= OWNER then return end
+        if string.startsWith(text, "!whitelist ") then
+            if !PROTECT then whitelistLog("Protection disabled. Enable it with !protect 1") end
+            local player = string.replace(text, "!whitelist ", "")
+            local players = find.playersByName(player)
+            if #players == 0 then
+                whitelistLog("Can't found players with this name (or part of name). Did you write it correctly?")
+                return ""
+            end
+            for _, founded in ipairs(players) do
+                if table.hasValue(WHITELIST, founded:getSteamID()) then
+                    whitelistLog("Player " .. founded:getName() .. " already in whitelist")
+                    continue
+                end
+                whitelistLog("Player " .. founded:getName() .. " whitelisted successfully!")
+                table.insert(WHITELIST, founded:getSteamID())
+            end
+            return ""
+        elseif string.startsWith(text, "!blacklist ") then
+            if !PROTECT then whitelistLog("Protection disabled. Enable it with !protect 1") end
+            local player = string.replace(text, "!blacklist ", "")
+            local players = find.playersByName(player)
+            if #players == 0 then
+                whitelistLog("Can't found players with this name (or part of name). Did you write it correctly?")
+                return ""
+            end
+            for _, founded in ipairs(players) do
+                local removed = table.removeByValue(WHITELIST, founded:getSteamID())
+                if !removed then
+                    whitelistLog("Player " .. founded:getName() .. " already in blacklist")
+                    continue
+                end
+                whitelistLog("Player " .. founded:getName() .. " blacklisted successfully!")
+            end
+            return ""
+        elseif string.startsWith(text, "!protect 1") then
+            PROTECT = true
+            whitelistLog("Protection enabled")
+            return ""
+        elseif string.startsWith(text, "!protect 0") then
+            PROTECT = false
+            whitelistLog("Protection disabled")
+            return ""
+        end
+    end)
+
     ---Base class for Astro
     ---@class AstroBase
-    AstroBase = {
-        ---@type number
-        state = nil,
-        ---@type number
-        speed = nil,
-        ---@type number
-        sprint = nil,
-        ---@type Vector
-        velocity = nil,
-        ---@type number
-        ratio = nil,
-        ---@type Entity
-        body = nil,
-        ---@type PhysObj
-        physobj = nil,
-        ---@type Entity
-        head = nil,
-        ---@type Hologram
-        cameraPin = nil,
-        ---@type Vehicle
-        seat = nil,
-        ---@type table
-        filter = nil,
-        ---@type Player
-        driver = nil
-    }
+    ---@field state number
+    ---@field speed number
+    ---@field sprint number
+    ---@field velocity Vector
+    ---@field ratio number
+    ---@field body Entity
+    ---@field physobj PhysObj
+    ---@field head Entity
+    ---@field cameraPin Hologram
+    ---@field seat Vehicle
+    ---@field filter table
+    ---@field driver Player
+    ---@field whitelist table
+    ---@field protect boolean
+    AstroBase = {}
     AstroBase.__index = AstroBase
 
     ---AstroBase constructor
@@ -169,6 +187,13 @@ if SERVER then
             if target ~= body then return end
             astro:damage(amount)
         end)
+        -- Use Astro to seat
+        hook.add("PlayerUse", "AstroUse" .. id, function(ply, ent)
+            if ent ~= body then return end
+            local permited, _ = hasPermission("player.enterVehicle", ply)
+            if !permited then return end
+            ply:enterVehicle(seat)
+        end)
         return astro
     end
 
@@ -220,8 +245,31 @@ if SERVER then
     end
 
 
+    local function findInWhitelist(whitelist, ply)
+        if table.hasValue(whitelist, ply:getSteamID()) then
+            return true
+        end
+        local name = ply:getName()
+        for _, nick in ipairs(whitelist) do
+            if string.find(name, nick) then
+                return true
+            end
+        end
+        return false
+    end
+
+    ---PlayerEnteredVehicle hook
+    ---@param ply Player
+    ---@param seat Vehicle
     function AstroBase:enter(ply, seat)
         if self.seat == seat then
+            if PROTECT and !findInWhitelist(WHITELIST, ply) then
+                net.start("Unallowed")
+                net.send(ply)
+                timer.simple(0.1, function()
+                    seat:ejectDriver()
+                end)
+            end
             self.driver = ply
             seat:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             self.head:setCollisionGroup(COLLISION_GROUP.NONE)
@@ -289,6 +337,7 @@ if SERVER then
             hook.remove("Removed", "AstroRemoved" .. id)
             hook.remove("Think", "AstroThink" .. id)
             hook.remove("PostEntityTakeDamage", "AstroDamage" .. id)
+            hook.remove("PlayerUse", "AstroUse" .. id)
             timer.create("deathExplosion", 0.2, 3, function()
                 local eff = effect.create()
                 eff:setOrigin(self.body:getPos())
@@ -339,7 +388,7 @@ else
         net.readEntity(function(head)
             net.readEntity(function(body)
                 timer.simple(0.1, function()
-                    enableHud(nil, true)
+                    pcall(enableHud(nil, true))
                     createPressHooks()
                     hook.run("AstroEntered", head, body)
                 end)
@@ -352,6 +401,13 @@ else
             enableHud(nil, false)
             removePressHooks()
             hook.run("AstroLeave")
+        end)
+    end)
+
+    net.receive("Unallowed", function()
+        timer.simple(0.1, function()
+            pcall(enableHud(nil, true))
+            printHud("You're not in whitelist of this Astro")
         end)
     end)
 end
