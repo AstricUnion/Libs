@@ -18,13 +18,11 @@
 -- "AstroEntered(pinPoint: Entity, body: Entity)"
 -- "AstroLeft()"
 
--- Misc.
-local OWNER = owner()
 
 -- Envirnoment variables
 local WHITELIST = table.add({owner():getSteamID()}, WHITELIST or {})
 local PROTECT = PROTECT ~= false and true or false
-print(PROTECT)
+
 
 
 ---Gets key direction of player.
@@ -214,9 +212,10 @@ if SERVER then
     function AstroBase:enter(ply, seat)
         if self.seat == seat then
             if PROTECT and !findInWhitelist(WHITELIST, ply) then
-                net.start("Unallowed")
-                net.send(ply)
                 timer.simple(0.1, function()
+                    pcall(enableHud, ply, true)
+                    pcall(printHud, "You're not in whitelist of this Astro")
+                    pcall(enableHud, ply, false)
                     seat:ejectDriver()
                 end)
             end
@@ -313,33 +312,50 @@ if SERVER then
         hook.run("InputReleased", ply, key)
     end)
 else
-    local function createPressHooks()
+    local function createHooks(camerapoint, body)
         hook.add("InputPressed", "AstroPressed", function(key)
-            if input.getCursorVisible() then return end
+            if input.isControlLocked() then return end
             net.start("pressed")
             net.writeInt(key, 32)
             net.send()
         end)
 
         hook.add("InputReleased", "AstroReleased", function(key)
-            if input.getCursorVisible() then return end
+            if input.isControlLocked() then return end
             net.start("released")
             net.writeInt(key, 32)
             net.send()
         end)
+
+        local lastPos = body:getPos()
+        local fovOffset = 0
+        local slop = 0
+        hook.add("CalcView", "AstroView", function(_, ang)
+            local pos = body:getPos()
+            local velocity = (pos - lastPos):getRotated(-body:getAngles())
+            lastPos = pos
+            fovOffset = math.lerp(0.1, fovOffset, (velocity.x + math.abs(velocity.y) + velocity.z) / 10)
+            slop = math.lerp(0.2, slop, -velocity.y / 20)
+            return {
+                origin = camerapoint:getPos(),
+                angles = ang + camerapoint:getLocalAngles() + Angle(0, 0, slop),
+                fov = 120 + fovOffset
+            }
+        end)
     end
 
-    local function removePressHooks()
+    local function removeHooks()
         hook.remove("InputPressed", "AstroPressed")
         hook.remove("InputReleased", "AstroReleased")
+        hook.remove("CalcView", "AstroView")
     end
 
     net.receive("OnEnter", function()
         net.readEntity(function(head)
             net.readEntity(function(body)
                 timer.simple(0.1, function()
-                    pcall(enableHud(nil, true))
-                    createPressHooks()
+                    pcall(enableHud, nil, true)
+                    createHooks(head, body)
                     hook.run("AstroEntered", head, body)
                 end)
             end)
@@ -349,15 +365,8 @@ else
     net.receive("OnLeave", function()
         timer.simple(0.1, function()
             enableHud(nil, false)
-            removePressHooks()
+            removeHooks()
             hook.run("AstroLeave")
-        end)
-    end)
-
-    net.receive("Unallowed", function()
-        timer.simple(0.1, function()
-            pcall(enableHud(nil, true))
-            printHud("You're not in whitelist of this Astro")
         end)
     end)
 end
