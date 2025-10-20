@@ -23,7 +23,8 @@ local OWNER = owner()
 
 -- Envirnoment variables
 local WHITELIST = table.add({owner():getSteamID()}, WHITELIST or {})
-local PROTECT = PROTECT and true or false
+local PROTECT = PROTECT ~= false and true or false
+print(PROTECT)
 
 
 ---Gets key direction of player.
@@ -41,55 +42,6 @@ if SERVER then
         print(Color(0, 255, 0), "[Whitelist] ", Color(255, 255, 255), text)
     end
 
-
-    -- so bad, sorry
-    hook.add("PlayerSay", "WhitelistCommands", function(ply, text)
-        if ply ~= OWNER then return end
-        if string.startsWith(text, "!whitelist ") then
-            if !PROTECT then whitelistLog("Protection disabled. Enable it with !protect 1") end
-            local player = string.replace(text, "!whitelist ", "")
-            local players = find.playersByName(player)
-            if #players == 0 then
-                whitelistLog("Can't found players with this name (or part of name). Did you write it correctly?")
-                return ""
-            end
-            for _, founded in ipairs(players) do
-                if table.hasValue(WHITELIST, founded:getSteamID()) then
-                    whitelistLog("Player " .. founded:getName() .. " already in whitelist")
-                    continue
-                end
-                whitelistLog("Player " .. founded:getName() .. " whitelisted successfully!")
-                table.insert(WHITELIST, founded:getSteamID())
-            end
-            return ""
-        elseif string.startsWith(text, "!blacklist ") then
-            if !PROTECT then whitelistLog("Protection disabled. Enable it with !protect 1") end
-            local player = string.replace(text, "!blacklist ", "")
-            local players = find.playersByName(player)
-            if #players == 0 then
-                whitelistLog("Can't found players with this name (or part of name). Did you write it correctly?")
-                return ""
-            end
-            for _, founded in ipairs(players) do
-                local removed = table.removeByValue(WHITELIST, founded:getSteamID())
-                if !removed then
-                    whitelistLog("Player " .. founded:getName() .. " already in blacklist")
-                    continue
-                end
-                whitelistLog("Player " .. founded:getName() .. " blacklisted successfully!")
-            end
-            return ""
-        elseif string.startsWith(text, "!protect 1") then
-            PROTECT = true
-            whitelistLog("Protection enabled")
-            return ""
-        elseif string.startsWith(text, "!protect 0") then
-            PROTECT = false
-            whitelistLog("Protection disabled")
-            return ""
-        end
-    end)
-
     ---Base class for Astro
     ---@class AstroBase
     ---@field state number
@@ -104,8 +56,6 @@ if SERVER then
     ---@field seat Vehicle
     ---@field filter table
     ---@field driver Player
-    ---@field whitelist table
-    ---@field protect boolean
     AstroBase = {}
     AstroBase.__index = AstroBase
 

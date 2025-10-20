@@ -50,7 +50,7 @@ if SERVER then
         holo2:setColor(Color(250, 200, 200))
         holo2:setParent(holo)
         holo3:setParent(holo)
-        timer.simple(0, function()
+        timer.simple(0.1, function()
             if !isValid(holo) then return end
             holo:setTrails(scale * 20, 0, 0.3, "trails/plasma", Color(255, 0, 0))
             holo:setVelocity(velocity * angle:getForward())
