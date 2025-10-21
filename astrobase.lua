@@ -314,14 +314,14 @@ if SERVER then
 else
     local function createHooks(camerapoint, body)
         hook.add("InputPressed", "AstroPressed", function(key)
-            if input.isControlLocked() then return end
+            if input.isControlLocked() or input.getCursorVisible() then return end
             net.start("pressed")
             net.writeInt(key, 32)
             net.send()
         end)
 
         hook.add("InputReleased", "AstroReleased", function(key)
-            if input.isControlLocked() then return end
+            if input.isControlLocked() or input.getCursorVisible() then return end
             net.start("released")
             net.writeInt(key, 32)
             net.send()
@@ -364,7 +364,7 @@ else
 
     net.receive("OnLeave", function()
         timer.simple(0.1, function()
-            enableHud(nil, false)
+            pcall(enableHud, nil, false)
             removeHooks()
             hook.run("AstroLeave")
         end)
