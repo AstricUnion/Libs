@@ -67,18 +67,18 @@ function Rig(pos, ang, visible)
 end
 
 
-
+---@class Trail
 Trail = {}
 Trail.__index = Trail
 
 ---Trail structure, stores hologram trail data
----@param startSize The start size of the trail (0-128)
----@param endSize The end size of the trail (0-128)
----@param length The length size of the trail
----@param mat The material of the trail
----@param color The color of the trail
----@param attachmentID Optional attachmentid the trail should attach to
----@param additive If the trail's rendering is additive
+---@param startSize number The start size of the trail (0-128)
+---@param endSize number The end size of the trail (0-128)
+---@param length number The length size of the trail
+---@param mat number The material of the trail
+---@param color number The color of the trail
+---@param attachmentID? number Optional attachmentid the trail should attach to
+---@param additive? boolean If the trail's rendering is additive
 ---@return Trail object
 function Trail:new(startSize, endSize, length, mat, color, attachmentID, additive)
     return setmetatable(
@@ -102,7 +102,7 @@ Holo.__index = Holo
 
 ---Holo structure, stores hologram data
 ---@param subholo Hologram Hologram to spawn
----@param trail Trail structure
+---@param trail? Trail Trail structure
 function Holo:new(subholo, trail)
     return setmetatable(
         {

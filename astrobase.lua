@@ -36,10 +36,6 @@ end
 
 
 if SERVER then
-    local function whitelistLog(text)
-        print(Color(0, 255, 0), "[Whitelist] ", Color(255, 255, 255), text)
-    end
-
     ---Base class for Astro
     ---@class AstroBase
     ---@field state number

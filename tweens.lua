@@ -1,6 +1,6 @@
 --@name Tweens
 --@author AstricUnion
---@server
+--@shared
 
 
 local TWEENS = {}
@@ -30,6 +30,10 @@ PROPERTY = {
     COLOR = {
         function(x) return x:getColor() end,
         function(x, set) x:setColor(set) end
+    },
+    SCALE = {
+        function(x) return x:getScale() end,
+        function(x, set) x:setScale(set) end
     },
     ANGULARVELOCITY = {
         function(x) return x:getAngleVelocity() end,
@@ -90,7 +94,7 @@ function Param:new(duration, object, property, to, ease, callback, process_callb
             starttime = starttime,
             object = object,
             to = to,
-            delta = Vector(),
+            delta = nil,
             ease = ease or function(x) return x end,
             callback = callback,
             process_callback = process_callback,
@@ -228,7 +232,12 @@ local function paramProgress(param, progress)
     if param.object then
         local pos = param.get(param.object)
         local to = isfunction(param.to) and param.to() or param.to
-        local initial = (pos - param.delta)
+        local initial
+        if param.delta then
+            initial = (pos - param.delta)
+        else
+            initial = pos
+        end
         local pos_smoothed = (to - initial) * smoothed
         param.set(param.object, initial + pos_smoothed)
         param.delta = pos_smoothed
