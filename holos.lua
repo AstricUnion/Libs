@@ -175,8 +175,9 @@ function hologram.createPart(...)
                 holo.subholo:setClip(
                     i,
                     true,
-                    holo.subholo:getPos() + clip.pos,
-                    clip.normal
+                    clip.pos,
+                    clip.normal,
+                    holo.subholo
                 )
             end
         end
