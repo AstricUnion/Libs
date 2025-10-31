@@ -68,15 +68,23 @@ end
 
 
 ---@class Trail
+---@field startSize number The start size of the trail (0-128)
+---@field endSize number The end size of the trail (0-128)
+---@field length number The length size of the trail
+---@field mat string The material of the trail
+---@field color Color The color of the trail
+---@field attachmentID? number Optional attachmentid the trail should attach to
+---@field additive? boolean If the trail's rendering is additive
 Trail = {}
 Trail.__index = Trail
+
 
 ---Trail structure, stores hologram trail data
 ---@param startSize number The start size of the trail (0-128)
 ---@param endSize number The end size of the trail (0-128)
 ---@param length number The length size of the trail
----@param mat number The material of the trail
----@param color number The color of the trail
+---@param mat string The material of the trail
+---@param color Color The color of the trail
 ---@param attachmentID? number Optional attachmentid the trail should attach to
 ---@param additive? boolean If the trail's rendering is additive
 ---@return Trail object
@@ -97,17 +105,46 @@ end
 setmetatable(Trail, {__call = Trail.new})
 
 
+---@class Clip
+---@field pos Vector
+---@field normal Vector
+Clip = {}
+Clip.__index = Clip
+
+---Clip structure
+---@param pos any
+---@param normal Vector Angle of clip, like normal, but local
+---@return table
+function Clip:new(pos, normal)
+    return setmetatable(
+        {
+            pos = pos,
+            normal = normal
+        },
+        Clip
+    )
+end
+
+setmetatable(Clip, {__call = Clip.new})
+
+
+---@class Holo
+---@field subholo Hologram
+---@field trail Trail
+---@field clips table[Clip]
 Holo = {}
 Holo.__index = Holo
 
 ---Holo structure, stores hologram data
 ---@param subholo Hologram Hologram to spawn
 ---@param trail? Trail Trail structure
-function Holo:new(subholo, trail)
+---@param clips? table[Clip] Table with Clip structure
+function Holo:new(subholo, trail, clips)
     return setmetatable(
         {
             subholo = subholo,
-            trail = trail
+            trail = trail,
+            clips = clips,
         },
         Holo
     )
@@ -120,6 +157,7 @@ setmetatable(Holo, {__call = Holo.new})
 function hologram.createPart(...)
     local main_holo
     for i, holo in ipairs({...}) do
+        ---@cast holo Holo
         if holo.trail then
             holo.subholo:setTrails(
                 holo.trail.startSize,
@@ -130,6 +168,17 @@ function hologram.createPart(...)
                 holo.trail.attachmentID,
                 holo.trail.additive
             )
+        end
+        if holo.clips then
+            for i, clip in ipairs(holo.clips) do
+                ---@cast clip Clip
+                holo.subholo:setClip(
+                    i,
+                    true,
+                    holo.subholo:getPos() + clip.pos,
+                    clip.normal
+                )
+            end
         end
         if i == 1 then
             main_holo = holo.subholo
