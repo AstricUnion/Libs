@@ -10,11 +10,12 @@ local materials = {}
 ---@field generate? function() -> isGenerated: boolean
 ---@field initialize? function(mat: Material) -> nil
 ---@field isGenerated? boolean
+---@field material? Material
 CMaterial = {}
 CMaterial.__index = CMaterial
 
 
----Create new CMaterial
+---Create new invalid CMaterial
 ---@param name string Name of material to identify it
 ---@param shader string Shader for material
 ---@return CMaterial
@@ -25,7 +26,8 @@ function CMaterial:new(name, shader)
             shader = shader,
             generate = nil,
             initialize = nil,
-            isGenerated = false
+            isGenerated = false,
+            material = nil
         },
         CMaterial
     )
@@ -35,7 +37,7 @@ end
 
 
 ---Set initializing function
----@param funcr function(mat: Material) -> nil
+---@param func function(mat: Material) -> nil
 ---@return CMaterial
 function CMaterial:setInitialize(func)
     self.initialize = func
@@ -52,8 +54,15 @@ function CMaterial:setGeneration(func)
 end
 
 
+---Is custom material valid?
+---@return boolean
+function CMaterial:isValid()
+    return self.material ~= nil
+end
+
+
 ---Create and initialize material
----@return Material material Created material to use it
+---@return Material material Created and valid custom material to use it
 function CMaterial:create()
     local mat = material.create(self.shader)
     if !render.renderTargetExists(self.name) then
@@ -61,16 +70,17 @@ function CMaterial:create()
     end
     mat:setTextureRenderTarget("$basetexture", self.name)
     if self.initialize then self.initialize(mat) end
+    self.material = mat
     return mat
 end
 
 
 hook.add("RenderOffscreen", "CMaterialsCreate", function()
-    for _, mat in ipairs(materials) do
-        if mat.isGenerated then continue end
-        render.selectRenderTarget(mat.name)
-        if mat.generate then
-            mat.isGenerated = mat.generate(mat.name)
+    for _, cmat in ipairs(materials) do
+        if cmat.isGenerated then continue end
+        render.selectRenderTarget(cmat.name)
+        if cmat.generate then
+            cmat.isGenerated = cmat.generate(cmat.name)
         end
     end
     render.selectRenderTarget()
