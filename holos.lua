@@ -96,8 +96,7 @@ if SERVER then
         local holo = {
             pos = pos or Vector(),
             ang = ang or Angle(),
-            model = "models/hunter/blocks/cube025x025x025.mdl",
-            color = Color(255, 255, 255, visible and 255 or 0),
+            model = "models/hunter/blocks/cube025x025x025.mdl"
         }
         local holo_obj = hologram.create(
             CHIPPOS + holo.pos,
@@ -110,7 +109,7 @@ if SERVER then
         end
         holo_obj:setDrawShadow(false)
         holo_obj:suppressEngineLighting(true)
-        holo_obj:setColor(holo.color)
+        holo_obj:setNoDraw(!visible)
         return holo_obj
     end
 
