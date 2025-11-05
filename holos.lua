@@ -108,6 +108,7 @@ if SERVER then
             throw("Can't create hologram with model " .. holo.model)
             return
         end
+        holo_obj:setDrawShadow(false)
         holo_obj:suppressEngineLighting(true)
         holo_obj:setColor(holo.color)
         return holo_obj
