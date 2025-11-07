@@ -98,3 +98,49 @@ end
 
 setmetatable(Bar, {__call = Bar.new})
 
+
+Button = {}
+Button.__index = Button
+
+
+function Button:new(x, y, w, h)
+    return setmetatable({
+        x = x,
+        y = y,
+        endx = x + w,
+        endy = y + h,
+        w = w,
+        h = h,
+        pressedInLastDraw = false,
+        callback = nil
+    }, Button)
+end
+
+
+function Button:isHover()
+    local x, y = input.getCursorPos()
+    return x > self.x and y > self.y and x < self.endx and y < self.endy
+end
+
+
+function Button:setCallback(func)
+    self.callback = func
+end
+
+
+function Button:draw()
+    render.drawRect(self.x, self.y, self.w, self.h)
+    if self.callback then
+        local isDown = input.isMouseDown(MOUSE.MOUSE1)
+        if isDown and !self.pressedInLastDraw and self:isHover() then
+            self.pressedInLastDraw = true
+            self.callback()
+        elseif !isDown then
+            self.pressedInLastDraw = false
+        end
+    end
+end
+
+
+setmetatable(Button, {__call = Button.new})
+

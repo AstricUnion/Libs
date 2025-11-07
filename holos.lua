@@ -96,7 +96,7 @@ if SERVER then
         local holo = {
             pos = pos or Vector(),
             ang = ang or Angle(),
-            model = "models/hunter/blocks/cube025x025x025.mdl"
+            model = "models/hunter/plates/plate.mdl"
         }
         local holo_obj = hologram.create(
             CHIPPOS + holo.pos,
