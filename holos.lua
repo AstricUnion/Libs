@@ -53,7 +53,7 @@ if SERVER then
     ---@param mat? string Material of holo, default uses model material
     ---@param clientId? string Send holo to clients with unique ID. Default nil. Sends to client hook HoloInitialized
     ---@return Hologram?
-    function SubHolo(pos, ang, model, scale, suppressLight, color, mat, clientId)
+    local function SubHolo(pos, ang, model, scale, suppressLight, color, mat, clientId)
         local holo = {
             pos = pos or Vector(),
             ang = ang or Angle(),
@@ -92,7 +92,7 @@ if SERVER then
     ---@param ang? Angle Angle, default Angle()
     ---@param visible? boolean Turn on visibility (for designing)
     ---@return Hologram?
-    function Rig(pos, ang, visible)
+    local function Rig(pos, ang, visible)
         local holo = {
             pos = pos or Vector(),
             ang = ang or Angle(),
@@ -122,7 +122,7 @@ if SERVER then
     ---@field color Color The color of the trail
     ---@field attachmentID? number Optional attachmentid the trail should attach to
     ---@field additive? boolean If the trail's rendering is additive
-    Trail = {}
+    local Trail = {}
     Trail.__index = Trail
 
 
@@ -155,7 +155,7 @@ if SERVER then
     ---@class Clip
     ---@field pos Vector
     ---@field normal Vector
-    Clip = {}
+    local Clip = {}
     Clip.__index = Clip
 
     ---Clip structure
@@ -179,7 +179,7 @@ if SERVER then
     ---@field subholo Hologram
     ---@field trail Trail
     ---@field clips table[Clip]
-    Holo = {}
+    local Holo = {}
     Holo.__index = Holo
 
     ---Holo structure, stores hologram data
@@ -236,6 +236,14 @@ if SERVER then
         end
         return main_holo
     end
+
+    return {
+        Holo = Holo,
+        Rig = Rig,
+        SubHolo = SubHolo,
+        Trail = Trail,
+        Clip = Clip
+    }
 else
     net.receive("HologramInitialized", function()
         local id = net.readString()

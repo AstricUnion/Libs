@@ -1,21 +1,31 @@
 --@name Simple gun
 --@author AstricUnion
 --@server
---@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/holos.txt as holos.txt
+--@include http://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/holos.lua as holos
 
-require("holos.txt")
+local holos = require("holos")
+
+---@class Holo
+local Holo = holos.Holo
+local Rig = holos.Rig
+local SubHolo = holos.SubHolo
+
+---@class Trail
+local Trail = holos.Trail
+
+---@class Clip
+local Clip = holos.Clip
+
 
 local parts = {
     hand = {
         hologram.createPart(
-            Holo(SubHolo()),
+            Holo(Rig()),
             Holo(SubHolo(Vector(0, 0, 5), Angle(), "models/props_c17/oildrum001_explosive.mdl"))
         ),
         hologram.createPart(
-            Holo(SubHolo(Vector(0, 0, 45))),
-            Holo(
-                SubHolo(Vector(0, 0, 50), Angle(), "models/props_c17/oildrum001_explosive.mdl")
-            ),
+            Holo(Rig(Vector(0, 0, 45))),
+            Holo(SubHolo(Vector(0, 0, 50), Angle(), "models/props_c17/oildrum001_explosive.mdl")),
             Holo(
                 SubHolo(Vector(0, 0, 90), Angle(), nil, nil, true, Color(0, 0, 0, 0)),
                 Trail(10, 50, 50, "trails/physbeam", Color(255, 255, 255))
