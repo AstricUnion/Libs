@@ -3,6 +3,7 @@
 --@server
 
 --Hitbox class
+---@class hitbox
 local hitbox = {}
 
 

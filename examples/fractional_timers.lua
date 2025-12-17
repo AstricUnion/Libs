@@ -1,11 +1,12 @@
 --@name Fractional timer example
 --@author AstricUnion
---@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/fractional_timers.txt as timers.txt
+--@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ftimers.lua as ftimers
 --@server
 
-require("timers.txt")
+---@class FTimer
+FTimer = require("ftimers")
 
-FTimer:new(10, 3, {
+FTimer:new(10, 1, {
     [0.0] = function()
         print("started")
     end,
@@ -18,10 +19,10 @@ FTimer:new(10, 3, {
     [0.6] = function()
         print("6 seconds")
     end,
-    ['0.8-0.9'] = function(t, fraction, relative)
+    ['0.8-0.9'] = function(_, fraction, relative)
         print("Fraction: ", fraction, ", relative: ", relative)
     end,
     [1.0] = function()
         print("ended")
-    end 
+    end
 })

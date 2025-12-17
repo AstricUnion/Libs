@@ -1,5 +1,5 @@
 --@name Fractional timers
---@author maxobur0001
+--@author AstricUnion
 --@shared
 
 -- TODO: Refactor FTimer class
@@ -7,7 +7,12 @@
 local instances = {}
 
 ---@class FTimer
-FTimer =  {}
+---@field loops number
+---@field duration number
+---@field paused boolean
+---@field fractions table
+---@field update_func thread
+local FTimer =  {}
 FTimer.__index = FTimer
 
 ---Fractional timer object.
@@ -16,10 +21,38 @@ FTimer.__index = FTimer
 ---@param fractions table Table with fractions. 
 ---                 As index you can use float number from 0 to 1 or range (as example, ["0.8-0.9"])
 ---                 As value you should use function. 
----                 For range function has 3 arguments (timer, fraction and relative fraction)
----                 For float function has 1 argument (timer)
----@return FTimer object
+---                 Range function has 3 arguments (timer, fraction and relative fraction)
+---                 Float function has 1 argument (timer)
+---@return FTimer? object
 function FTimer:new(duration, loops, fractions)
+    -- Check fractions
+    for index, _ in pairs(fractions) do
+        if isnumber(index) and (index > 1 or index < 0) then
+            throw(tostring(index) .. " in fractions is more than 1 or less than 0")
+            return
+        elseif isstring(index) then
+            local range = string.split(index, "-")
+            if #range ~= 2 then
+                throw("Range is invalid!")
+                return
+            end
+            for _, v in ipairs(range) do
+                local num = tonumber(v)
+                if !num then
+                    throw("Range is invalid! One of values is not number")
+                    return
+                end
+                if num > 1 or num < 0 then
+                    throw("Range is invalid! One of values is more than 1 or less than 0")
+                    return
+                end
+            end
+            if tonumber(range[1]) >= tonumber(range[2]) then
+                throw("Range is invalid! \"From\" value is more than \"to\" value")
+                return
+            end
+        end
+    end
     local timer = setmetatable(
         {
             loops = loops,
@@ -38,13 +71,14 @@ function FTimer:new(duration, loops, fractions)
 end
 
 
----Removes timer
+---Remove timer
 function FTimer:remove()
     table.removeByValue(instances, self)
+    setmetatable(self, nil)
 end
 
 
----Pauses timer
+---Pause timer
 function FTimer:pause()
     self.paused = true
 end
@@ -56,7 +90,7 @@ function FTimer:start()
 end
 
 
----Update function. Don't use it in your code
+---Update function, uses internally. Don't use it in your code
 function FTimer.update(self)
     local ticks = 0
     local last_tick = 0
@@ -73,7 +107,7 @@ function FTimer.update(self)
         for second, callback in pairs(self.fractions) do
             -- If fraction with one number
             if isnumber(second) then
-                if process >= second and last_tick <= second then
+                if process > second and last_tick <= second then
                     callback(self)
                 end
             -- If fraction with range
@@ -104,3 +138,4 @@ hook.add("Tick", "fractionalTimers", function()
 end)
 
 
+return FTimer
