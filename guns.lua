@@ -3,10 +3,10 @@
 --@shared
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ftimers.lua as ftimers
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/holos.lua as holos
+---@class FTimer
+local FTimer = require("ftimers")
 
 if SERVER then
-    ---@class FTimer
-    local FTimer = require("ftimers")
     require("holos")
 
     local projectiles = {}
