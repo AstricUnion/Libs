@@ -4,7 +4,7 @@
 --@server
 
 ---@class FTimer
-FTimer = require("ftimers")
+local FTimer = require("ftimers")
 
 FTimer:new(10, 1, {
     [0.0] = function()

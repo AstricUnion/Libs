@@ -14,26 +14,43 @@ There is some libs:
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/astrobase.lua as astrobase
 require("astrobase")
 
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ftimers.lua as ftimers
-require("ftimers")
+---@class FTimer
+local FTimer = require("ftimers")
+
 
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/guns.lua as guns
 require("guns")
 
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/hitbox.lua as hitbox
 require("hitbox")
 
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/holos.lua as holos
-require("holos")
+local holos = require("holos")
+---@class Holo
+local Holo = holos.Holo
+local Rig = holos.Rig
+local SubHolo = holos.SubHolo
+---@class Trail
+local Trail = holos.Trail
+---@class Clip
+local Clip = holos.Clip
+
 
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/light.lua as light
 require("light")
 
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/sounds.lua as sounds
 require("sounds")
 
+
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/tweens.lua as tweens
 require("tweens")
+
 
 --@include https://raw.githubusercontent.com/AstricUnion/Libs/refs/heads/main/ui.lua as ui
 require("ui")

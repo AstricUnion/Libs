@@ -107,7 +107,7 @@ function FTimer.update(self)
         for second, callback in pairs(self.fractions) do
             -- If fraction with one number
             if isnumber(second) then
-                if process > second and last_tick <= second then
+                if process >= second and last_tick <= second then
                     callback(self)
                 end
             -- If fraction with range
