@@ -77,10 +77,10 @@ Param = {}
 ---@param duration number | table
 ---@param object Entity
 ---@param property PROPERTY
----@param to any | function(): any
----@param ease function(fraction: number): number
----@param callback? function(tween: Tween)
----@param process_callback? function(tween: Tween, fraction: number)
+---@param to any | fun(): any
+---@param ease fun(fraction: number): number
+---@param callback? fun(tween: Tween)
+---@param process_callback? fun(tween: Tween, fraction: number)
 ---@return Param
 function Param:new(duration, object, property, to, ease, callback, process_callback)
     local starttime = 0
@@ -113,9 +113,9 @@ Fraction = {}
 
 ---Create new fraction
 ---@param duration number
----@param ease? function(fraction: number)
----@param callback? function(tween: Tween)
----@param process_callback? function(tween: Tween, fraction: number)
+---@param ease? fun(fraction: number)
+---@param callback? fun(tween: Tween)
+---@param process_callback? fun(tween: Tween, fraction: number)
 ---@return Fraction
 function Fraction:new(duration, ease, callback, process_callback)
     local starttime = 0
